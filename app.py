@@ -1,9 +1,14 @@
-import requests
-import json
-from flask import Flask, jsonify, request
+from flask import Flask, request, jsonify
+from flask_mysqldb import MySQL
+from flask_cors import CORS
 import ollama
 
 app = Flask(__name__)
+
+app.config['MYSQL_HOST'] = 'localhost'
+app.config['MYSQL_USER'] = 'root'
+app.config['MYSQL_PASSWORD'] = ''
+app.config['MYSQL_DB'] = 'mathbuddy'
 
 
 @app.route('/')
