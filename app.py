@@ -10,6 +10,8 @@ app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = ''
 app.config['MYSQL_DB'] = 'mathbuddy'
 
+mysql = MySQL(app)
+
 
 @app.route('/')
 def hello_world():
@@ -68,6 +70,22 @@ def create_quiz():
         return jsonify(response['message']['content'])
     else:
         return jsonify({'error': 'Request must be JSON'}), 400
+
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data['username']
+    password = data['password']
+
+    cursor = mysql.connection.cursor()
+    cursor.execute("SELECT * FROM users WHERE username = %s AND password = %s", (username, password))
+    user = cursor.fetchone()
+
+    if user:
+        return jsonify({"message": "Login successful"}), 200
+    else:
+        return jsonify({"message": "Invalid credentials"}), 401
 
 
 if __name__ == '__main__':
