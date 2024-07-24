@@ -77,12 +77,9 @@ def generate_rag_response(content, question):
             {"role": "user", "content": get_ques_response_prompt(question)}
         ], stream=True)
 
-        print("####### THINKING OF ANSWER............ ")
-
         # Collect the response chunks as they arrive
         full_answer = ''
         for chunk in stream:
-            print(chunk['message']['content'], end='', flush=True)
             full_answer += chunk['message']['content']
 
         return full_answer
