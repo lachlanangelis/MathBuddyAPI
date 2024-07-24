@@ -1,0 +1,7 @@
+Flask
+Flask-MySQLdb
+mysqlclient
+ollama
+chromadb
+langchain_community
+sentence-transformers
