@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify
 from flask_mysqldb import MySQL
-from flask_cors import CORS
 import MySQLdb.cursors
 import ollama
+from rag import generate_rag_response, extract_context
 
 app = Flask(__name__)
 
@@ -31,21 +31,25 @@ def get_response():
     return jsonify(response['message']['content'])
 
 
-@app.route('/getCustom', methods=['POST'])
-def get_customResponse():
-    if request.is_json:
+@app.route('/query', methods=['POST'])
+def respond_to_query():
+    if request.method == 'POST':
+        # Retrieve the JSON data from the request
         data = request.get_json()
-        content = data.get('content', '')
+        query = data.get('query')
 
-        response = ollama.chat(model='llama3', messages=[
-            {
-                'role': 'user',
-                'content': content,
-            },
-        ])
-        return jsonify(response['message']['content'])
-    else:
-        return jsonify({'error': 'Request must be JSON'}), 400
+        if query:
+            # Extract context related to the query
+            context = extract_context(query)
+
+            # Generate a response using the context and query
+            response = generate_rag_response(context, query)
+
+            # Return the response as JSON
+            return jsonify({"response": response})
+        else:
+            # Return an error if no query was provided
+            return jsonify({"error": "No query provided"}), 400
 
 
 @app.route('/createQuiz', methods=['POST'])
@@ -88,13 +92,15 @@ def login():
     else:
         return jsonify({"message": "Invalid credentials"}), 401
 
-#Database Query functions and routes
+
+# Database Query functions and routes
 def fetch_data_from_table(table_name):
     cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
     cur.execute(f"SELECT * FROM {table_name}")
     rows = cur.fetchall()
     cur.close()
     return rows
+
 
 @app.route('/tables', methods=['GET'])
 def get_tables():
@@ -105,6 +111,7 @@ def get_tables():
     cur.close()
     return jsonify(table_list)
 
+
 @app.route('/tables/<table_name>', methods=['GET'])
 def get_table_data(table_name):
     try:
@@ -112,52 +119,62 @@ def get_table_data(table_name):
         return jsonify(data)
     except Exception as e:
         return jsonify({"error": str(e)}), 400
-    
-#To access the data use /tables/<tablename>
+
+
+# To access the data use /tables/<tablename>
 @app.route('/classes', methods=['GET'])
 def get_classes():
     data = fetch_data_from_table('classes')
     return jsonify(data)
+
 
 @app.route('/feedback', methods=['GET'])
 def get_feedback():
     data = fetch_data_from_table('feedback')
     return jsonify(data)
 
+
 @app.route('/lessons', methods=['GET'])
 def get_lessons():
     data = fetch_data_from_table('lessons')
     return jsonify(data)
+
 
 @app.route('/parents', methods=['GET'])
 def get_parents():
     data = fetch_data_from_table('parents')
     return jsonify(data)
 
+
 @app.route('/quizzes', methods=['GET'])
 def get_quizzes():
     data = fetch_data_from_table('quizzes')
     return jsonify(data)
+
 
 @app.route('/quiz_questions', methods=['GET'])
 def get_quiz_questions():
     data = fetch_data_from_table('quiz_questions')
     return jsonify(data)
 
+
 @app.route('/students', methods=['GET'])
 def get_students():
     data = fetch_data_from_table('students')
     return jsonify(data)
+
 
 @app.route('/student_quizzes', methods=['GET'])
 def get_student_quizzes():
     data = fetch_data_from_table('student_quizzes')
     return jsonify(data)
 
+
 @app.route('/teachers', methods=['GET'])
 def get_teachers():
     data = fetch_data_from_table('teachers')
     return jsonify(data)
+
 
 @app.route('/users', methods=['GET'])
 def get_users():
