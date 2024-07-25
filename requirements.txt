@@ -5,3 +5,4 @@ ollama
 chromadb
 langchain_community
 sentence-transformers
+bcrypt
