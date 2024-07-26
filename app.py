@@ -3,6 +3,9 @@ from flask_mysqldb import MySQL
 import MySQLdb.cursors
 import ollama
 import bcrypt
+import json
+import logging
+import requests 
 from rag import generate_rag_response, extract_context
 
 app = Flask(__name__)
@@ -53,6 +56,51 @@ def respond_to_query():
             return jsonify({"error": "No query provided"}), 400
 
 
+#Generate and store a quiz question 
+#Takes quiz_id and query as prompts
+
+#TODO Will split this into separate functions so that user 
+# can choose whether to store the question in the database
+
+@app.route('/gen_ques', methods=['POST'])
+def genQues():
+    if request.method == 'POST':
+        # Retrieve the JSON data from the request
+        data = request.get_json()
+        query = data.get('query')
+        quiz_id = data.get('quiz_id')
+
+        if query:
+            # Extract context related to the query
+            context = extract_context(query)
+
+            # Generate a response using the context and query
+            response = generate_rag_response(context, query)
+            
+            question = response
+            question_text = question
+
+            question = "Give just the answer to " + question            
+            #generate answer
+            context = extract_context(question)
+            response = generate_rag_response(context, question)
+
+            #Store the quiz question and answer in the database
+            correct_answer = response
+
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute("INSERT INTO quiz_questions (quiz_id, question_text, correct_answer) VALUES (%s, %s, %s)",
+                           (quiz_id, question_text, correct_answer))
+            mysql.connection.commit()
+
+
+            # Return the response as JSON
+            return jsonify({"question": question_text,"answer":response})
+        else:
+            # Return an error if no query was provided
+            return jsonify({"error": "No query provided"}), 400
+
+  
 @app.route('/login', methods=['POST'])
 def login():
     try:
@@ -78,6 +126,7 @@ def login():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/signup', methods=['POST'])
 def signup():
