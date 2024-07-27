@@ -4,4 +4,4 @@ mysqlclient
 ollama
 chromadb
 langchain_community
-sentence-transformers
+sentence_transformers
