@@ -137,10 +137,6 @@ def generate_quiz_questions(quiz_id, topic, number_of_questions, difficulty):
         correct_answer = answer_response
 
         # Store the quiz question and answer in the database
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute("INSERT INTO quiz_questions (quiz_id, question_text, correct_answer) VALUES (%s, %s, %s)",
-                       (quiz_id, question_text, correct_answer))
-        mysql.connection.commit()
 
         # Add the question and answer to the questions list
         questions.append({"question": question_text, "answer": correct_answer})
