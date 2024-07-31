@@ -5,7 +5,7 @@ import ollama
 import bcrypt
 import json
 import logging
-import requests 
+import requests
 from rag import generate_rag_response, extract_context
 
 app = Flask(__name__)
@@ -56,12 +56,7 @@ def respond_to_query():
             return jsonify({"error": "No query provided"}), 400
 
 
-#Generate and store a quiz question 
-#Takes quiz_id and query as prompts
-
-#TODO Will split this into separate functions so that user 
-# can choose whether to store the question in the database
-
+# Generate and store a quiz question
 @app.route('/gen_ques', methods=['POST'])
 def genQues():
     if request.method == 'POST':
@@ -76,16 +71,16 @@ def genQues():
 
             # Generate a response using the context and query
             response = generate_rag_response(context, query)
-            
+
             question = response
             question_text = question
 
-            question = "Give just the answer to " + question            
-            #generate answer
+            question = "Give just the answer to " + question
+            # generate answer
             context = extract_context(question)
             response = generate_rag_response(context, question)
 
-            #Store the quiz question and answer in the database
+            # Store the quiz question and answer in the database
             correct_answer = response
 
             cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -93,14 +88,66 @@ def genQues():
                            (quiz_id, question_text, correct_answer))
             mysql.connection.commit()
 
-
             # Return the response as JSON
-            return jsonify({"question": question_text,"answer":response})
+            return jsonify({"question": question_text, "answer": response})
         else:
             # Return an error if no query was provided
             return jsonify({"error": "No query provided"}), 400
 
-  
+
+# Create a quiz with multiple questions
+@app.route('/create_quiz', methods=['POST'])
+def create_quiz():
+    if request.method == 'POST':
+        # Retrieve the JSON data from the request
+        data = request.get_json()
+        quiz_id = data.get('quiz_id')
+        topic = data.get('topic')
+        number_of_questions = data.get('number_of_questions')
+        difficulty = data.get('difficulty')
+
+        if quiz_id and topic and number_of_questions and difficulty:
+            # Generate the quiz
+            questions = generate_quiz_questions(quiz_id, topic, number_of_questions, difficulty)
+
+            # Return the generated quiz as JSON
+            return jsonify({"quiz_id": quiz_id, "questions": questions})
+        else:
+            # Return an error if any parameter is missing
+            return jsonify({"error": "Missing required parameters"}), 400
+
+
+def generate_quiz_questions(quiz_id, topic, number_of_questions, difficulty):
+    questions = []
+    for i in range(number_of_questions):
+        # Create a query for generating each question based on the topic and difficulty
+        query = f"Generate a {difficulty} level question on {topic}"
+
+        # Extract context related to the query
+        context = extract_context(query)
+
+        # Generate a response using the context and query
+        response = generate_rag_response(context, query)
+        question_text = response
+
+        # Generate the answer for the question
+        answer_query = f"Give just the answer to: {question_text}"
+        context = extract_context(answer_query)
+        answer_response = generate_rag_response(context, answer_query)
+        correct_answer = answer_response
+
+        # Store the quiz question and answer in the database
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("INSERT INTO quiz_questions (quiz_id, question_text, correct_answer) VALUES (%s, %s, %s)",
+                       (quiz_id, question_text, correct_answer))
+        mysql.connection.commit()
+
+        # Add the question and answer to the questions list
+        questions.append({"question": question_text, "answer": correct_answer})
+
+    return questions
+
+
 @app.route('/login', methods=['POST'])
 def login():
     try:
@@ -160,6 +207,7 @@ def signup():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # Database Query functions and routes
 def fetch_data_from_table(table_name):
