@@ -5,7 +5,7 @@ from chromadb.config import Settings
 import uuid
 
 # Load the JSONL file
-file_path = 'traindata/labeled_train_data.jsonl'
+file_path = '../traindata/labeled_train_data.jsonl'
 
 # Read the JSONL file and parse its content
 with open(file_path, 'r') as f:
