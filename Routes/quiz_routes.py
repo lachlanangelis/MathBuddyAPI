@@ -1,10 +1,14 @@
 from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required
 from Routes.rag import *
+from decorator import role_required
 
 quiz_routes = Blueprint('quiz_routes', __name__)
 
 
 @quiz_routes.route('/create_quiz', methods=['POST'])
+@jwt_required()
+@role_required('teacher')
 def create_quiz():
     if request.method == 'POST':
         # Retrieve the JSON data from the request
