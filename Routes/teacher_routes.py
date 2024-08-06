@@ -101,3 +101,13 @@ def get_class_feedback():
 #TODO endpoint to display personal information of teachers
 
 #TODO add function to Edit personal information of teachers
+        
+# Route to get detailed quiz results for each student 
+
+# Route to provide additional feedback on student quizzes
+
+# Route to update teacher profile information DOB, class assigned, other details
+
+# Route to assign a quiz to a specific class
+
+# Route to get a list of all classes managed by the teacher
