@@ -1,5 +1,5 @@
 import MySQLdb.cursors
-from flask import Blueprint, jsonify, current_app
+from flask import Blueprint, jsonify, current_app, request
 
 sql_routes = Blueprint('sql_routes', __name__)
 

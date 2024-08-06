@@ -47,6 +47,7 @@ def login():
         return jsonify({"error": str(e)}), 500
 
 # Define the signup route
+#TODO separate teacher and student signup
 @auth_routes.route('/signup', methods=['POST'])
 def signup():
     try:
