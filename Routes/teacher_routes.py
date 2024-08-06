@@ -85,7 +85,7 @@ def get_class_feedback():
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         # Fix this part later query = 
-        cursor.execute(query, (class_id,))
+        # cursor.execute(query, (class_id,))
         result = cursor.fetchall()
         cursor.close()
 
