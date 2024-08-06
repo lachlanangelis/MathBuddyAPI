@@ -42,7 +42,7 @@ def get_system_message_rag(content):
     4. Remove duplicate content from draft response.
     5. Generate your final response after adjusting it to increase accuracy and relevance.
     6. Do not try to summarise the answers, explain it properly.
-    6. Only show your final response! 
+    7. Only show your final response! 
 
     Constraints:
     1. DO NOT PROVIDE ANY EXPLANATION OR DETAILS OR MENTION THAT YOU WERE GIVEN CONTEXT.
