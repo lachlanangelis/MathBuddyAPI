@@ -16,6 +16,9 @@ app.register_blueprint(quiz_routes)
 app.register_blueprint(sql_routes)
 app.register_blueprint(auth_routes)
 app.register_blueprint(ollama_routes)
+app.register_blueprint(teacher_routes)
+app.register_blueprint(student_routes)
+app.register_blueprint(parent_routes)
 
 app.config['MYSQL_HOST'] = MYSQL_HOST
 app.config['MYSQL_USER'] = MYSQL_USER
@@ -27,6 +30,7 @@ app.config['JWT_SECRET_KEY'] = api_key  # Change this to a secure secret key
 jwt = JWTManager(app)
 
 mysql = MySQL(app)
+app.config['mysql'] = mysql
 
 @app.route('/')
 def hello_world():
