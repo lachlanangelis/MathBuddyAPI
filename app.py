@@ -4,6 +4,9 @@ from flask_mysqldb import MySQL
 from Routes.quiz_routes import quiz_routes
 from Routes.sql_routes import sql_routes
 from Routes.auth_routes import auth_routes
+from Routes.teacher_routes import teacher_routes
+from Routes.student_routes import student_routes
+from Routes.parent_routes import parent_routes
 from Routes.ollama_routes import ollama_routes
 from env_var import *
 
