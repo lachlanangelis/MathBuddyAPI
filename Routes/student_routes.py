@@ -46,3 +46,11 @@ def getStudentQuiz():
 # Route to modify student data including, Name, Gender, DOB.
 
 # Route to get student feedback, this should have the quizz name and the result/feedback associated
+
+# Route to display active homework with quiz title and due date
+
+# Route to get student get classes 
+
+# Route to get student lessons 
+
+# Route to quiz completion message
