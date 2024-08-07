@@ -17,8 +17,8 @@ def get_response(query):
     return jsonify(response['message']['content'])
 
 def get_answer(query):
-    response = ollama.generate(model='llama3', prompt=query)
-    return jsonify({"answer":response})
+    response = ollama.chat(model='llama3', messages=[{'role': 'user', 'content': query}])
+    return response['message']['content']
 
 # Get Response through RAG App
 @ollama_routes.route('/query', methods=['POST'])
