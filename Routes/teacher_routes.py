@@ -158,7 +158,44 @@ def get_teacher_lessons():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-#TODO endpoint to display personal information of teachers
+#endpoint to display personal information of teachers
+@teacher_routes.route('/teacher/<int:teacher_id>', methods=['GET'])
+def get_teacher_by_id(teacher_id):
+    try:
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        query = """
+        SELECT 
+            t.teacher_id,
+            t.teacher_name,
+            t.user_id,
+            u.date_of_birth,
+            u.gender,
+            u.full_name,
+            u.preferred_first_name,
+            u.city,
+            u.state,
+            u.postal_code,
+            u.address,
+            u.mobile_phone,
+            u.home_phone
+        FROM 
+            teachers t
+        JOIN 
+            users u ON t.user_id = u.user_id
+        WHERE 
+            t.teacher_id = %s
+        """
+        cursor.execute(query, (teacher_id,))
+        result = cursor.fetchone()
+        cursor.close()
+
+        if result:
+            return jsonify(result), 200
+        else:
+            return jsonify({"message": "Teacher not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 #TODO add function to Edit personal information of teachers
         
