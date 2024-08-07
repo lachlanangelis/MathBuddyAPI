@@ -73,28 +73,51 @@ def create_class():
 
 #TODO add a function to add students to a class and update db
 
-#TODO endpoint to display feedback for each class quiz
 
+#endpoint to display feedback for each class quiz
 @teacher_routes.route('/class_feedback', methods=['GET'])
 def get_class_feedback():
+
     try:
         class_id = request.args.get('class_id')
-        if not class_id:
-            return jsonify({"error": "Missing class_id parameter"}), 400
+        quiz_id = request.args.get('quiz_id')
+        
+        if not class_id or not quiz_id:
+            return jsonify({"error": "Missing class_id or quiz_id parameter"}), 400
 
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        # Fix this part later query = 
-        # cursor.execute(query, (class_id,))
+        
+        query = """
+        SELECT 
+            s.student_name,
+            sq.score,
+            f.feedback_text_ai,
+            f.additional_feedback_teacher
+        FROM 
+            students s
+        JOIN 
+            student_quizzes sq ON s.student_id = sq.student_id
+        JOIN 
+            feedback f ON sq.quiz_id = f.quiz_id AND sq.student_id = f.student_id
+        JOIN 
+            classes c ON s.class_id = c.class_id
+        WHERE 
+            sq.quiz_id = %s AND c.class_id = %s;
+        """
+        
+        cursor.execute(query, (quiz_id, class_id))
         result = cursor.fetchall()
         cursor.close()
 
         if result:
             return jsonify(result), 200
         else:
-            return jsonify({"message": "No feedback found for the given class_id"}), 404
+            return jsonify({"message": "No feedback found for the given class_id and quiz_id"}), 404
+    
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 #TODO endpoint to display lessons 
 

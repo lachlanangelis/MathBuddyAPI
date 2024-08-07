@@ -7,6 +7,7 @@ from Routes.quiz_routes import quiz_routes
 from Routes.sql_routes import sql_routes
 from Routes.auth_routes import auth_routes
 from Routes.ollama_routes import ollama_routes
+from Routes.teacher_routes import teacher_routes
 from env_var import *
 
 app = Flask(__name__)
@@ -16,6 +17,7 @@ app.register_blueprint(sql_routes)
 app.register_blueprint(auth_routes)
 app.register_blueprint(ollama_routes)
 app.register_blueprint(student_routes)
+app.register_blueprint(teacher_routes)
 
 app.config['MYSQL_HOST'] = MYSQL_HOST
 app.config['MYSQL_USER'] = MYSQL_USER
@@ -27,6 +29,7 @@ app.config['JWT_SECRET_KEY'] = api_key  # Change this to a secure secret key
 jwt = JWTManager(app)
 
 mysql = MySQL(app)
+app.config['mysql'] =mysql
 
 @app.route('/')
 def hello_world():
