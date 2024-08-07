@@ -5,9 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a2d82f30-343e-4019-839f-008e13206ccd" name="Changes" comment="Initial Commit">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Routes/student_routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/Routes/student_routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Routes/teacher_routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/Routes/teacher_routes.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Routes/quiz_routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/Routes/quiz_routes.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -213,6 +211,6 @@
     <SUITE FILE_PATH="coverage/MathBuddyAPI$chromadbload.coverage" NAME="chromadbload Coverage Results" MODIFIED="1721810605451" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/MathBuddyAPI$ollamatest.coverage" NAME="ollamatest Coverage Results" MODIFIED="1719219194442" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/MathBuddyAPI$promptStrings.coverage" NAME="promptStrings Coverage Results" MODIFIED="1719313084248" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/MathBuddyAPI$MathBuddyAPI.coverage" NAME="MathBuddyAPI Coverage Results" MODIFIED="1722923665440" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/MathBuddyAPI$MathBuddyAPI.coverage" NAME="MathBuddyAPI Coverage Results" MODIFIED="1723025958029" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

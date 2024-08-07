@@ -32,7 +32,8 @@ def generate_quiz_questions(quiz_id, topic, number_of_questions, difficulty):
     questions = []
     for i in range(number_of_questions):
         # Create a query for generating each question based on the topic and difficulty
-        query = f"Generate a {difficulty} level question on {topic}"
+        query = (f"Generate a {difficulty} level question on {topic}. Here are the previous questions. {questions}. DO"
+                 f"NOT RE USE ANY OF THE PREVIOUS QUESTIONS")
 
         # Extract context related to the query
         context = extract_context(query)
