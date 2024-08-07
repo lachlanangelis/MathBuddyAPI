@@ -119,7 +119,44 @@ def get_class_feedback():
         return jsonify({"error": str(e)}), 500
 
 
-#TODO endpoint to display lessons 
+#endpoint to display lessons 
+
+@teacher_routes.route('/teacher_lessons', methods=['GET'])
+def get_teacher_lessons():
+    try:
+        teacher_id = request.args.get('teacher_id')
+        if not teacher_id:
+            return jsonify({"error": "Missing teacher_id parameter"}), 400
+
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # Query to fetch lessons for the given teacher
+        query = """
+        SELECT 
+            l.lesson_id,
+            l.title,
+            l.content,
+            c.class_name
+        FROM 
+            lessons l
+        JOIN 
+            classes c ON l.class_id = c.class_id
+        WHERE 
+            l.teacher_id = %s
+        """
+        
+        cursor.execute(query, (teacher_id,))
+        result = cursor.fetchall()
+        cursor.close()
+
+        if result:
+            return jsonify(result), 200
+        else:
+            return jsonify({"message": "No lessons found for the given teacher_id"}), 404
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 #TODO endpoint to display personal information of teachers
 
@@ -133,4 +170,3 @@ def get_class_feedback():
 
 # Route to assign a quiz to a specific class
 
-# Route to get a list of all classes managed by the teacher
