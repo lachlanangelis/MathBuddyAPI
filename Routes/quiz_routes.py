@@ -32,8 +32,9 @@ def generate_quiz_questions(quiz_id, topic, number_of_questions, difficulty):
     questions = []
     for i in range(number_of_questions):
         # Create a query for generating each question based on the topic and difficulty
-        query = (f"Generate a {difficulty} level question on {topic}. Here are the previous questions. {questions}. DO"
-                 f"NOT RE USE ANY OF THE PREVIOUS QUESTIONS")
+        query = (f"Generate a {difficulty} level question on {topic}. Here are the previous questions. {questions}. "
+                 f"DO NOT RE USE ANY OF THE CONTEXT OF THE PREVIOUS QUESTIONS"
+                 f"DO NOT RE USE ANY OF THE PREVIOUS QUESTIONS")
 
         # Extract context related to the query
         context = extract_context(query)
@@ -43,7 +44,8 @@ def generate_quiz_questions(quiz_id, topic, number_of_questions, difficulty):
         question_text = response
 
         # Generate the answer for the question
-        answer_query = f"Give just the answer to: {question_text}"
+        answer_query = (f"Give just the answer to: {question_text}"
+                        f"DO NOT GIVE ANY PRECEDING TEXT TO THE ANSWER")
         context = extract_context(answer_query)
         answer_response = generate_rag_response(context, answer_query)
         correct_answer = answer_response
