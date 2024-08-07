@@ -7,15 +7,18 @@ ollama_routes = Blueprint('routes', __name__)
 
 # Get Response with just Ollama
 @ollama_routes.route('/getResponse')
-def get_response():
+def get_response(query):
     response = ollama.chat(model='llama3', messages=[
         {
             'role': 'user',
-            'content': 'Who are you in 1 line?',
+            'content': query,
         },
     ])
     return jsonify(response['message']['content'])
 
+def get_answer(query):
+    response = ollama.generate(model='llama3', prompt=query)
+    return jsonify({"answer":response})
 
 # Get Response through RAG App
 @ollama_routes.route('/query', methods=['POST'])

@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 from Routes.rag import *
+from Routes.ollama_routes import *
 from decorator import role_required
 
 quiz_routes = Blueprint('quiz_routes', __name__)
@@ -32,9 +33,7 @@ def generate_quiz_questions(quiz_id, topic, number_of_questions, difficulty):
     questions = []
     for i in range(number_of_questions):
         # Create a query for generating each question based on the topic and difficulty
-        query = (f"Generate a {difficulty} level question on {topic}. Here are the previous questions. {questions}. "
-                 f"DO NOT RE USE ANY OF THE CONTEXT OF THE PREVIOUS QUESTIONS"
-                 f"DO NOT RE USE ANY OF THE PREVIOUS QUESTIONS")
+        query = f"Generate a {difficulty} level question on {topic}. Here are the previous questions. {questions}."
 
         # Extract context related to the query
         context = extract_context(query)
@@ -44,10 +43,11 @@ def generate_quiz_questions(quiz_id, topic, number_of_questions, difficulty):
         question_text = response
 
         # Generate the answer for the question
-        answer_query = (f"Give just the answer to: {question_text}"
-                        f"DO NOT GIVE ANY PRECEDING TEXT TO THE ANSWER")
-        context = extract_context(answer_query)
-        answer_response = generate_rag_response(context, answer_query)
+        answer_query = (f"CONSTRAINTS:"
+                        f"1. DO NOT GIVE ANY PRECEDING TEXT TO THE ANSWER"
+                        f"2. THE ANSWER SHOULD ONLY BE THE NUMBER"
+                        f"Give just the answer to: {question_text}")
+        answer_response = get_answer(answer_query)
         correct_answer = answer_response
 
         # Store the quiz question and answer in the database
