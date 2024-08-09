@@ -2,7 +2,7 @@
 from flask import Blueprint, request, jsonify, current_app
 import MySQLdb.cursors
 import bcrypt
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token
 
 # Create a Blueprint for authentication routes
 auth_routes = Blueprint('auth_routes', __name__)
@@ -47,8 +47,8 @@ def login():
         return jsonify({"error": str(e)}), 500
 
 # Define the signup route
-#TODO separate teacher and student signup
-@auth_routes.route('/signup', methods=['POST'])
+# TODO separate teacher and student signup
+@auth_routes.route('/signupTeach', methods=['POST'])
 def signup():
     try:
         # Get MySQL connection
@@ -57,42 +57,8 @@ def signup():
         data = request.get_json()
         password = data.get('password')
         email = data.get('email')
-        role = data.get('role')
-
-        # Validate the input
-        if not password or not email or not role:
-            return jsonify({"error": "Missing required fields"}), 400
-
-        # Check if the email already exists in the database
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
-        user = cursor.fetchone()
-
-        if user:
-            return jsonify({"error": "Email already exists"}), 400
-
-        # Hash the password
-        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-
-        # Insert the new user into the database
-        cursor.execute("INSERT INTO users (password, email, role) VALUES (%s, %s, %s)",
-                       (hashed_password.decode('utf-8'), email, role))
-        mysql.connection.commit()
-
-        return jsonify({"message": "User registered successfully"}), 201
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@auth_routes.route('/signupStu', methods=['POST'])
-def signupStu():
-    try:
-        # Get MySQL connection
-        mysql = get_mysql()
-        # Get the JSON data from the request
-        data = request.get_json()
-        password = data.get('password')
-        email = data.get('email')
+        full_name = data.get('full_name')
+        phone = data.get('phone')
 
         # Validate the input
         if not password or not email:
@@ -104,15 +70,88 @@ def signupStu():
         user = cursor.fetchone()
 
         if user:
+            cursor.close()
             return jsonify({"error": "Email already exists"}), 400
 
         # Hash the password
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
         # Insert the new user into the database
-        cursor.execute("INSERT INTO users (password, email) VALUES (%s, %s)",
-                       (hashed_password.decode('utf-8'), email))
+        cursor.execute("INSERT INTO users (password, email, role, full_name, mobile_phone) VALUES (%s, %s, 'teacher', "
+                       "%s, %s)",
+                       (hashed_password.decode('utf-8'), email, full_name, phone))
         mysql.connection.commit()
+
+        # Retrieve the user_id of the newly inserted user
+        cursor.execute("SELECT user_id FROM users WHERE email = %s", (email,))
+        user_record = cursor.fetchone()
+        user_id = user_record['user_id'] if user_record else None
+
+        if not user_id:
+            cursor.close()
+            return jsonify({"error": "Failed to retrieve user ID"}), 500
+
+        # Insert into teachers table
+        cursor.execute("INSERT INTO teachers (teacher_name, user_id) VALUES (%s, %s)",
+                       (full_name, user_id))
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({"message": "User registered successfully"}), 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@auth_routes.route('/signupStu', methods=['POST'])
+def signupStu():
+    try:
+        # Get MySQL connection
+        mysql = get_mysql()
+        # Get the JSON data from the request
+        data = request.get_json()
+        password = data.get('password')
+        email = data.get('email')
+        phone = data.get('phone')
+        full_name = data.get('full_name')
+
+        # Validate the input
+        if not password or not email or not phone or not full_name:
+            return jsonify({"error": "Missing required fields"}), 400
+
+        # Check if the email already exists in the database
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+        user = cursor.fetchone()
+
+        if user:
+            return jsonify({"error": "Email already exists"}), 400
+
+        # Hash the password
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
+        # Insert the new user into the database
+        cursor.execute("INSERT INTO users (password, email, role, full_name, mobile_phone) VALUES (%s, %s, 'student', "
+                       "%s, %s)",
+                       (hashed_password.decode('utf-8'), email, full_name, phone))
+
+        mysql.connection.commit()
+
+        # Retrieve the user_id of the newly inserted user
+        cursor.execute("SELECT user_id FROM users WHERE email = %s", (email,))
+        user_record = cursor.fetchone()
+        user_id = user_record['user_id'] if user_record else None
+
+        if not user_id:
+            cursor.close()
+            return jsonify({"error": "Failed to retrieve user ID"}), 500
+
+        # Insert into student table
+        cursor.execute("INSERT INTO students (student_name, user_id) VALUES (%s, %s)",
+                       (full_name, user_id))
+        mysql.connection.commit()
+
+        cursor.close()
 
         return jsonify({"message": "User registered successfully"}), 201
 
