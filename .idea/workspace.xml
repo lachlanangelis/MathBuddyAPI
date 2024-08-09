@@ -6,6 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="a2d82f30-343e-4019-839f-008e13206ccd" name="Changes" comment="Initial Commit">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Routes/auth_routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/Routes/auth_routes.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -177,7 +178,7 @@
       <workItem from="1722904503447" duration="54000" />
       <workItem from="1722922571905" duration="2647000" />
       <workItem from="1722940000072" duration="5594000" />
-      <workItem from="1723065995071" duration="1668000" />
+      <workItem from="1723065995071" duration="2091000" />
     </task>
     <task id="LOCAL-00001" summary="Initial Commit">
       <option name="closed" value="true" />

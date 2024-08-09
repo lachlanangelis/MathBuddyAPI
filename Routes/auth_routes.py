@@ -83,3 +83,38 @@ def signup():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@auth_routes.route('/signupStu', methods=['POST'])
+def signupStu():
+    try:
+        # Get MySQL connection
+        mysql = get_mysql()
+        # Get the JSON data from the request
+        data = request.get_json()
+        password = data.get('password')
+        email = data.get('email')
+
+        # Validate the input
+        if not password or not email:
+            return jsonify({"error": "Missing required fields"}), 400
+
+        # Check if the email already exists in the database
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+        user = cursor.fetchone()
+
+        if user:
+            return jsonify({"error": "Email already exists"}), 400
+
+        # Hash the password
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
+        # Insert the new user into the database
+        cursor.execute("INSERT INTO users (password, email) VALUES (%s, %s)",
+                       (hashed_password.decode('utf-8'), email))
+        mysql.connection.commit()
+
+        return jsonify({"message": "User registered successfully"}), 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
