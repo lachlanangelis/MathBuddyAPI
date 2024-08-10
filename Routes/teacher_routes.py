@@ -73,8 +73,45 @@ def create_class():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-#TODO add a function to add students to a class and update db
 
+#function to add students to a class and update db
+@teacher_routes.route('/update_students_class', methods=['POST'])
+def update_students_class():
+    try:
+        # Get the data from the request
+        data = request.json
+        student_ids = data.get('student_ids')
+        new_class_id = data.get('new_class_id')
+
+        # Validate the input
+        if not student_ids or not new_class_id:
+            return jsonify({"error": "Missing student_ids or new_class_id"}), 400
+
+        # Ensure student_ids is a list
+        if not isinstance(student_ids, list):
+            return jsonify({"error": "student_ids must be a list"}), 400
+
+        # Get the MySQL connection
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor()
+
+        # Prepare the query
+        query = "UPDATE students SET class_id = %s WHERE student_id = %s"
+
+        # Update each student's class
+        for student_id in student_ids:
+            cursor.execute(query, (new_class_id, student_id))
+
+        # Commit the transaction
+        mysql.connection.commit()
+
+        # Close the cursor
+        cursor.close()
+
+        return jsonify({"message": "Added students to class successfully"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 #endpoint to display feedback for each class quiz
 @teacher_routes.route('/class_feedback', methods=['GET'])
@@ -199,7 +236,7 @@ def get_teacher_by_id(teacher_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-#TODO add function to Edit personal information of teachers
+#function to Edit personal information of teachers
 
 @teacher_routes.route('/update_teacher_profile', methods=['POST'])
 def update_teacher_profile():
@@ -366,7 +403,6 @@ def add_additional_feedback():
         return jsonify({"error": str(e)}), 500
 
 
-# Route to update teacher profile information DOB, class assigned, other details
 
 # Route to assign a quiz to a specific class
 
