@@ -404,5 +404,26 @@ def add_additional_feedback():
 
 
 
-# Route to assign a quiz to a specific class
+#Route to assign a quiz to a specific class
+@teacher_routes.route('/assign_quiz', methods=['POST'])
+def assign_quiz_to_class():
+    try:
+        data = request.get_json()
+        class_id = data.get('class_id')
+        quiz_id = data.get('quiz_id')
 
+        if not class_id or not quiz_id:
+            return jsonify({"error": "Both class_id and quiz_id must be provided"}), 400
+
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # Update the class_id for the quiz
+        query = "UPDATE quizzes SET class_id = %s WHERE quiz_id = %s"
+        cursor.execute(query, (class_id, quiz_id))
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({"message": "Quiz assigned to class successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
