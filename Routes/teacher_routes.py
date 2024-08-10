@@ -367,7 +367,7 @@ def add_additional_feedback():
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-        # Check if feedback already exists for the specific student, teacher, and quiz
+        # Update or insert the feedback in the feedback table
         cursor.execute("""
             SELECT feedback_id FROM feedback
             WHERE student_id = %s AND teacher_id = %s AND quiz_id = %s
@@ -375,7 +375,6 @@ def add_additional_feedback():
         feedback = cursor.fetchone()
 
         if feedback:
-            # If feedback exists, update the additional feedback
             update_feedback_query = """
             UPDATE feedback
             SET additional_feedback_teacher = %s
@@ -383,21 +382,26 @@ def add_additional_feedback():
             """
             cursor.execute(update_feedback_query, (additional_feedback_teacher, feedback['feedback_id']))
         else:
-            # If no feedback exists, insert new feedback with only the teacher's additional feedback
             insert_feedback_query = """
             INSERT INTO feedback (student_id, teacher_id, quiz_id, additional_feedback_teacher)
             VALUES (%s, %s, %s, %s)
             """
             cursor.execute(insert_feedback_query, (student_id, teacher_id, quiz_id, additional_feedback_teacher))
 
+        # Update the additional feedback in the student_quizzes table
+        cursor.execute("""
+            UPDATE student_quizzes
+            SET additional_feedback_teacher = %s
+            WHERE student_id = %s AND quiz_id = %s
+        """, (additional_feedback_teacher, student_id, quiz_id))
+
         mysql.connection.commit()
         cursor.close()
 
-        return jsonify({"message": "Additional feedback updated successfully"}), 200
+        return jsonify({"message": "Additional feedback updated successfully in both tables"}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 
 #Route to assign a quiz to a specific class
@@ -418,8 +422,21 @@ def assign_quiz_to_class():
         query = "UPDATE quizzes SET class_id = %s WHERE quiz_id = %s"
         cursor.execute(query, (class_id, quiz_id))
         mysql.connection.commit()
+
+        # Get all students in the class
+        cursor.execute("SELECT student_id FROM students WHERE class_id = %s", (class_id,))
+        students = cursor.fetchall()
+
+        # Create a student_quizzes record for each student in the class
+        for student in students:
+            cursor.execute("""
+                INSERT INTO student_quizzes (student_id, quiz_id)
+                VALUES (%s, %s)
+            """, (student['student_id'], quiz_id))
+        
+        mysql.connection.commit()
         cursor.close()
 
-        return jsonify({"message": "Quiz assigned to class successfully"}), 200
+        return jsonify({"message": "Quiz assigned to class and records created for each student successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
