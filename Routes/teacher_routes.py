@@ -131,14 +131,12 @@ def get_class_feedback():
         SELECT 
             s.student_name,
             sq.score,
-            f.feedback_text_ai,
-            f.additional_feedback_teacher
+            sq.feedback AS feedback_text_ai,
+            sq.additional_feedback_teacher
         FROM 
             students s
         JOIN 
             student_quizzes sq ON s.student_id = sq.student_id
-        JOIN 
-            feedback f ON sq.quiz_id = f.quiz_id AND sq.student_id = f.student_id
         JOIN 
             classes c ON s.class_id = c.class_id
         WHERE 
@@ -348,8 +346,6 @@ def update_teacher_profile():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-# Route to get detailed quiz results for each student 
 
 # Route to provide additional feedback on student quizzes
 
