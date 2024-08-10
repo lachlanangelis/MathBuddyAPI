@@ -2,6 +2,8 @@ import MySQLdb.cursors
 from flask import Flask, request, jsonify
 from flask_mysqldb import MySQL
 from flask import Blueprint, jsonify, current_app
+import json
+
 
 teacher_routes = Blueprint('teacher_routes', __name__)
 
@@ -198,10 +200,171 @@ def get_teacher_by_id(teacher_id):
         return jsonify({"error": str(e)}), 500
 
 #TODO add function to Edit personal information of teachers
-        
+
+@teacher_routes.route('/update_teacher_profile', methods=['POST'])
+def update_teacher_profile():
+    try:
+        # Retrieve JSON data from the request
+        data = request.get_json()
+        teacher_id = data.get('teacher_id')
+
+        # Optional fields that can be updated
+        teacher_name = data.get('teacher_name')
+        date_of_birth = data.get('date_of_birth')
+        gender = data.get('gender')
+        full_name = data.get('full_name')
+        preferred_first_name = data.get('preferred_first_name')
+        city = data.get('city')
+        state = data.get('state')
+        postal_code = data.get('postal_code')
+        address = data.get('address')
+        mobile_phone = data.get('mobile_phone')
+        home_phone = data.get('home_phone')
+        email = data.get('email')
+        password = data.get('password')
+
+        # Validate that teacher_id is present
+        if not teacher_id:
+            return jsonify({"error": "Missing teacher_id parameter"}), 400
+
+        # Get MySQL connection
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # Initialize update queries and parameters list
+        update_fields = []
+        parameters = []
+
+        # Conditionally build the update query based on provided data
+        if teacher_name:
+            update_fields.append("t.teacher_name = %s")
+            parameters.append(teacher_name)
+
+        if date_of_birth:
+            update_fields.append("u.date_of_birth = %s")
+            parameters.append(date_of_birth)
+
+        if gender:
+            update_fields.append("u.gender = %s")
+            parameters.append(gender)
+
+        if full_name:
+            update_fields.append("u.full_name = %s")
+            parameters.append(full_name)
+
+        if preferred_first_name:
+            update_fields.append("u.preferred_first_name = %s")
+            parameters.append(preferred_first_name)
+
+        if city:
+            update_fields.append("u.city = %s")
+            parameters.append(city)
+
+        if state:
+            update_fields.append("u.state = %s")
+            parameters.append(state)
+
+        if postal_code:
+            update_fields.append("u.postal_code = %s")
+            parameters.append(postal_code)
+
+        if address:
+            update_fields.append("u.address = %s")
+            parameters.append(address)
+
+        if mobile_phone:
+            update_fields.append("u.mobile_phone = %s")
+            parameters.append(mobile_phone)
+
+        if home_phone:
+            update_fields.append("u.home_phone = %s")
+            parameters.append(home_phone)
+
+        if email:
+            update_fields.append("u.email = %s")
+            parameters.append(email)
+
+        if password:
+            update_fields.append("u.password = %s")
+            parameters.append(password)
+
+        # Ensure there is something to update
+        if not update_fields:
+            return jsonify({"error": "No valid fields provided for update"}), 400
+
+        # Build the final update query
+        update_query = f"""
+        UPDATE teachers t
+        JOIN users u ON t.user_id = u.user_id
+        SET {', '.join(update_fields)}
+        WHERE t.teacher_id = %s
+        """
+        parameters.append(teacher_id)
+
+        # Execute the update query
+        cursor.execute(update_query, tuple(parameters))
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({"message": "Teacher profile updated successfully"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # Route to get detailed quiz results for each student 
 
 # Route to provide additional feedback on student quizzes
+
+@teacher_routes.route('/add_additional_feedback', methods=['POST'])
+def add_additional_feedback():
+    try:
+        # Retrieve JSON data from the request
+        data = request.get_json()
+        student_id = data.get('student_id')
+        teacher_id = data.get('teacher_id')
+        quiz_id = data.get('quiz_id')
+        additional_feedback_teacher = data.get('additional_feedback_teacher')
+
+        # Validate that required fields are present
+        if not student_id or not teacher_id or not quiz_id or not additional_feedback_teacher:
+            return jsonify({"error": "Missing required parameters"}), 400
+
+        # Get MySQL connection
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # Check if feedback already exists for the specific student, teacher, and quiz
+        cursor.execute("""
+            SELECT feedback_id FROM feedback
+            WHERE student_id = %s AND teacher_id = %s AND quiz_id = %s
+        """, (student_id, teacher_id, quiz_id))
+        feedback = cursor.fetchone()
+
+        if feedback:
+            # If feedback exists, update the additional feedback
+            update_feedback_query = """
+            UPDATE feedback
+            SET additional_feedback_teacher = %s
+            WHERE feedback_id = %s
+            """
+            cursor.execute(update_feedback_query, (additional_feedback_teacher, feedback['feedback_id']))
+        else:
+            # If no feedback exists, insert new feedback with only the teacher's additional feedback
+            insert_feedback_query = """
+            INSERT INTO feedback (student_id, teacher_id, quiz_id, additional_feedback_teacher)
+            VALUES (%s, %s, %s, %s)
+            """
+            cursor.execute(insert_feedback_query, (student_id, teacher_id, quiz_id, additional_feedback_teacher))
+
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({"message": "Additional feedback updated successfully"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 # Route to update teacher profile information DOB, class assigned, other details
 
