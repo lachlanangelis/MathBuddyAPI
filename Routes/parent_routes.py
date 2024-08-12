@@ -49,8 +49,96 @@ def get_child_info():
         return jsonify({"error": str(e)}), 500
 
 #Route to display pending tasks of the child 
+@parent_routes.route('/get_pending_tasks', methods=['POST'])
+def get_pending_tasks():
+    try:
+        # Retrieve JSON data from the request
+        data = request.get_json()
+        parent_id = data.get('parent_id')
 
-#Route to display Progress report
+        if not parent_id:
+            return jsonify({"error": "Missing parent_id parameter"}), 400
+
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        
+        # SQL query to get pending quizzes for the student
+        sql_query = '''
+        SELECT 
+            q.quiz_id,
+            q.title AS quiz_title,
+            q.description AS quiz_description,
+            q.due_date AS quiz_due_date
+        FROM 
+            quizzes q
+        JOIN 
+            classes c ON q.class_id = c.class_id
+        JOIN 
+            students s ON s.class_id = c.class_id
+        LEFT JOIN 
+            student_quizzes sq ON s.student_id = sq.student_id AND q.quiz_id = sq.quiz_id
+        WHERE 
+            s.student_id IN (SELECT child_id FROM parents WHERE parent_id = %s)
+            AND sq.score IS NULL
+        '''
+
+        cursor.execute(sql_query, (parent_id,))
+        pending_tasks = cursor.fetchall()
+
+        cursor.close()
+
+        if pending_tasks:
+            return jsonify(pending_tasks), 200
+        else:
+            return jsonify({"message": "No pending quizzes found for the child"}), 404
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
+#Route to display Progress report (currently only displays scores of all quizzes)
+@parent_routes.route('/get_child_progress', methods=['POST'])
+def get_child_quiz_scores():
+    try:
+        # Retrieve JSON data from the request
+        data = request.get_json()
+        parent_id = data.get('parent_id')
+
+        if not parent_id:
+            return jsonify({"error": "Missing parent_id parameter"}), 400
+
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # SQL query to get all quiz scores with quiz names for the child
+        sql_query = '''
+        SELECT 
+            q.quiz_id,
+            q.title AS quiz_title,
+            sq.score
+        FROM 
+            student_quizzes sq
+        JOIN 
+            quizzes q ON sq.quiz_id = q.quiz_id
+        JOIN 
+            students s ON sq.student_id = s.student_id
+        WHERE 
+            s.student_id IN (SELECT child_id FROM parents WHERE parent_id = %s)
+        '''
+
+        cursor.execute(sql_query, (parent_id,))
+        quiz_scores = cursor.fetchall()
+
+        cursor.close()
+
+        if quiz_scores:
+            return jsonify(quiz_scores), 200
+        else:
+            return jsonify({"message": "No quiz scores found for the child"}), 404
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 #Route to display Child quizzes
 @parent_routes.route('/get_completed_quizzes', methods=['POST'])
