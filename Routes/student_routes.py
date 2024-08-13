@@ -16,14 +16,20 @@ def getStudentQuiz():
 
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        # Place query here
+        
+        # Query to get all quizzes for a student
         sql_query = '''
         SELECT 
             s.student_id,
             s.student_name,
             q.quiz_id,
+            q.title AS quiz_title,
+            q.description AS quiz_description,
+            q.due_date,
             sq.score,
-            sq.feedback AS student_feedback
+            sq.feedback AS student_feedback,
+            sq.completed,
+            sq.completed_at
         FROM 
             students s
         JOIN 
@@ -38,8 +44,8 @@ def getStudentQuiz():
 
         cursor.close()
         return jsonify(quizzes)
-    
 
+# Route to get student pending quizzes (not completed)
 @student_routes.route('/getStudentPendingQuizzes', methods=['POST'])
 def get_student_pending_quizzes():
     if request.method == 'POST':
@@ -49,7 +55,7 @@ def get_student_pending_quizzes():
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         
-        # Query to get only quizzes that haven't been completed (i.e., score is NULL)
+        # Query to get only quizzes that haven't been completed
         sql_query = '''
         SELECT 
             s.student_id,
@@ -67,7 +73,7 @@ def get_student_pending_quizzes():
         JOIN 
             quizzes q ON sq.quiz_id = q.quiz_id
         WHERE 
-            s.student_id = %s AND sq.score IS NULL
+            s.student_id = %s AND sq.completed = 0
         '''
         cursor.execute(sql_query, (student_id,))
         pending_quizzes = cursor.fetchall()
@@ -75,13 +81,10 @@ def get_student_pending_quizzes():
         cursor.close()
         return jsonify(pending_quizzes)
 
-
 # Route to get students current quiz, this should list the questions.
-
 @student_routes.route('/student/<int:student_id>/current_quiz', methods=['GET'])
 def get_current_quiz(student_id):
     try:
-        # Get MySQL connection
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
@@ -102,7 +105,7 @@ def get_current_quiz(student_id):
         JOIN 
             students s ON s.student_id = sq.student_id
         WHERE 
-            s.student_id = %s AND sq.score IS NULL
+            s.student_id = %s AND sq.completed = 0
         """
         cursor.execute(query, (student_id,))
         quizzes = cursor.fetchall()
@@ -116,16 +119,10 @@ def get_current_quiz(student_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-
-# Route to save a quiz, this includes marking the quiz, sending the prompt for ai feedback storing the result.
-
-#endpoint to display personal information of students
-
+# Route to display personal information of students
 @student_routes.route('/student/<int:student_id>', methods=['GET'])
 def get_student_by_id(student_id):
     try:
-        # Get MySQL connection
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
@@ -163,14 +160,11 @@ def get_student_by_id(student_id):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
 
-# Route to modify student data including, Name, Gender, DOB.
-
+# Route to modify student data including, Name, Gender, DOB, etc.
 @student_routes.route('/update_student_profile', methods=['POST'])
 def update_student_profile():
     try:
-        # Retrieve JSON data from the request
         data = request.get_json()
         student_id = data.get('student_id')
 
@@ -189,21 +183,17 @@ def update_student_profile():
         email = data.get('email')
         password = data.get('password')
 
-        # Validate that student_id is present
         if not student_id:
             return jsonify({"error": "Missing student_id parameter"}), 400
 
-        # Get MySQL connection
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-        # Initialize update queries and parameters list
         update_fields_students = []
         update_fields_users = []
         parameters_students = []
         parameters_users = []
 
-        # Conditionally build the update query based on provided data
         if student_name:
             update_fields_students.append("student_name = %s")
             parameters_students.append(student_name)
@@ -256,11 +246,9 @@ def update_student_profile():
             update_fields_users.append("password = %s")
             parameters_users.append(password)
 
-        # Ensure there is something to update
         if not update_fields_students and not update_fields_users:
             return jsonify({"error": "No valid fields provided for update"}), 400
 
-        # Update the students table
         if update_fields_students:
             update_students_query = f"""
             UPDATE students
@@ -270,7 +258,6 @@ def update_student_profile():
             parameters_students.append(student_id)
             cursor.execute(update_students_query, tuple(parameters_students))
 
-        # Update the users table
         if update_fields_users:
             cursor.execute("""
                 SELECT user_id FROM students WHERE student_id = %s
@@ -293,15 +280,11 @@ def update_student_profile():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
 
-
-# Route to get student feedback, this should have the quizz name and the result/feedback associated
-
+# Route to get student feedback for a specific quiz
 @student_routes.route('/student/<int:student_id>/quiz_results/<int:quiz_id>', methods=['GET'])
 def get_quiz_result_for_specific_quiz(student_id, quiz_id):
     try:
-        # Get MySQL connection
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
@@ -332,15 +315,10 @@ def get_quiz_result_for_specific_quiz(student_id, quiz_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-# Route to display active homework with quiz title and due date
-
-# Route to get student get classes 
-
+# Route to get student classes
 @student_routes.route('/student/<int:student_id>/classes', methods=['GET'])
 def get_student_classes(student_id):
     try:
-        # Get MySQL connection
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
@@ -372,13 +350,10 @@ def get_student_classes(student_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-# Route to get student lessons 
-
+# Route to get student lessons
 @student_routes.route('/student/<int:student_id>/lessons', methods=['GET'])
 def get_student_lessons(student_id):
     try:
-        # Get MySQL connection
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
@@ -409,5 +384,35 @@ def get_student_lessons(student_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 # Route to quiz completion message
+@student_routes.route('/student/<int:student_id>/quiz/<int:quiz_id>/complete', methods=['POST'])
+def complete_quiz(student_id, quiz_id):
+    try:
+        # Get MySQL connection
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # Check if the quiz has already been completed
+        cursor.execute("""
+            SELECT completed FROM student_quizzes 
+            WHERE student_id = %s AND quiz_id = %s
+        """, (student_id, quiz_id))
+        quiz = cursor.fetchone()
+
+        if not quiz:
+            return jsonify({"error": "Quiz not found for this student"}), 404
+        
+        if quiz['completed'] == 1:
+            # Return a completion message
+            return jsonify({"message": "Quiz has been successfully completed!"}), 200
+        else:
+            return jsonify({"message": "Quiz is not yet completed."}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Route to save a quiz, this includes marking the quiz, sending the prompt for AI feedback, and storing the result.
+# @student_routes.route('/submit_quiz', methods=['POST'])
+# still need ai functions to mark and give feedback!
+
+# Route to display active homework with quiz title and due date
