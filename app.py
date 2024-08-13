@@ -1,6 +1,7 @@
 from flask_jwt_extended import JWTManager
 from flask import Flask
 from flask_mysqldb import MySQL
+from flask_cors import CORS
 
 from Routes.student_routes import student_routes
 from Routes.quiz_routes import quiz_routes
@@ -41,4 +42,7 @@ def hello_world():
 
 
 if __name__ == '__main__':
+    #Allows methods from react
+    CORS(app)
     app.run()
+    
