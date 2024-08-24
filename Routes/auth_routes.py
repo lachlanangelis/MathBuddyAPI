@@ -37,7 +37,17 @@ def login():
             if bcrypt.checkpw(password.encode('utf-8'), stored_password.encode('utf-8')):
                 # Create an access token if the password is correct
                 access_token = create_access_token(identity={"email": email, "role": user["role"]})
-                return jsonify({"access_token": access_token}), 200
+
+                # Extract the full_name and role from the user data
+                full_name = user['full_name']
+                role = user['role']
+
+                # Return the token, full_name, and role
+                return jsonify({
+                    "access_token": access_token,
+                    "full_name": full_name,
+                    "role": role
+                }), 200
             else:
                 return jsonify({"message": "Invalid credentials"}), 401
         else:
@@ -45,7 +55,8 @@ def login():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
+    
+    
 # Define the signup route
 # TODO separate teacher and student signup
 @auth_routes.route('/signupTeach', methods=['POST'])
