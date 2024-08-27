@@ -12,11 +12,8 @@ def get_mysql():
 @student_routes.route('/getStudentQuiz', methods=['POST'])
 def getStudentQuiz():
     data = request.get_json()
-    # JWT has been verified, and role has been checked, so no need to decode manually
-
-    # Get the student ID from the token
-    identity = get_jwt_identity()
-    student_id = identity.get('student_id')
+    token = data['token']
+    student_id = get_id(token)
 
     mysql = get_mysql()
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -30,6 +27,7 @@ def getStudentQuiz():
         q.title AS quiz_title,
         q.description AS quiz_description,
         q.due_date,
+        q.time_limit,
         sq.score,
         sq.feedback AS student_feedback,
         sq.completed,
