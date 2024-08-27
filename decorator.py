@@ -118,12 +118,34 @@ def get_student_id(user_id):
         return None
 
 def get_teacher_id(user_id):
-    # Implement this function to retrieve teacher_id based on user_id
-    pass
+    try:
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        print(f"Querying for teacher_id with user_id={user_id}")
+        query = "SELECT teacher_id FROM teachers WHERE user_id = %s"
+        cursor.execute(query, (user_id,))
+        teacher_id = cursor.fetchone()
+        print(f"Teacher ID retrieved: {teacher_id}")
+        cursor.close()
+        return teacher_id["teacher_id"] if teacher_id else None
+    except Exception as e:
+        print(f"Error querying teacher ID: {str(e)}")
+        return None
 
 def get_parent_id(user_id):
-    # Implement this function to retrieve parent_id based on user_id
-    pass
+    try:
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        print(f"Querying for parent_id with user_id={user_id}")
+        query = "SELECT parent_id FROM parents WHERE user_id = %s"
+        cursor.execute(query, (user_id,))
+        parent_id = cursor.fetchone()
+        print(f"Parent ID retrieved: {parent_id}")
+        cursor.close()
+        return parent_id["parent_id"] if parent_id else None
+    except Exception as e:
+        print(f"Error querying parent ID: {str(e)}")
+        return None
 
 # Example route to get the role from a JWT token
 @decorator_routes.route('/get_role', methods=['POST'])

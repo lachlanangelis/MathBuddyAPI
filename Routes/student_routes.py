@@ -11,43 +11,43 @@ def get_mysql():
 # Route to get students quiz list: includes completions, scores, due date and time limit.
 @student_routes.route('/getStudentQuiz', methods=['POST'])
 def getStudentQuiz():
-    if request.method == 'POST':
-        data = request.get_json()
-        token = data['token']
-        student_id = get_id(token)
+    data = request.get_json()
+    # JWT has been verified, and role has been checked, so no need to decode manually
 
-        mysql = get_mysql()
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    # Get the student ID from the token
+    identity = get_jwt_identity()
+    student_id = identity.get('student_id')
 
-        # Query to get all quizzes for a student
-        sql_query = '''
-        SELECT 
-            s.student_id,
-            s.student_name,
-            q.quiz_id,
-            q.title AS quiz_title,
-            q.description AS quiz_description,
-            q.due_date,
-            sq.score,
-            sq.feedback AS student_feedback,
-            sq.completed,
-            sq.completed_at
-        FROM 
-            students s
-        JOIN 
-            student_quizzes sq ON s.student_id = sq.student_id
-        JOIN 
-            quizzes q ON sq.quiz_id = q.quiz_id
-        WHERE 
-            s.student_id = %s
-        '''
-        cursor.execute(sql_query, (student_id,))
-        quizzes = cursor.fetchall()
+    mysql = get_mysql()
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-        print(f"Fetched quizzes: {quizzes}")  # Debug print
+    # Query to get all quizzes for a student
+    sql_query = '''
+    SELECT 
+        s.student_id,
+        s.student_name,
+        q.quiz_id,
+        q.title AS quiz_title,
+        q.description AS quiz_description,
+        q.due_date,
+        sq.score,
+        sq.feedback AS student_feedback,
+        sq.completed,
+        sq.completed_at
+    FROM 
+        students s
+    JOIN 
+        student_quizzes sq ON s.student_id = sq.student_id
+    JOIN 
+        quizzes q ON sq.quiz_id = q.quiz_id
+    WHERE 
+        s.student_id = %s
+    '''
+    cursor.execute(sql_query, (student_id,))
+    quizzes = cursor.fetchall()
 
-        cursor.close()
-        return jsonify(quizzes)
+    cursor.close()
+    return jsonify(quizzes)
 
 
 # Route to get student pending quizzes (not completed)
@@ -55,7 +55,8 @@ def getStudentQuiz():
 def get_student_pending_quizzes():
     if request.method == 'POST':
         data = request.get_json()
-        student_id = data['student_id']
+        token = data['token']
+        student_id = get_id(token)
 
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
