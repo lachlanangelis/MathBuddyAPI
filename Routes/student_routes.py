@@ -12,11 +12,8 @@ def get_mysql():
 @student_routes.route('/getStudentQuiz', methods=['POST'])
 def getStudentQuiz():
     data = request.get_json()
-    # JWT has been verified, and role has been checked, so no need to decode manually
-
-    # Get the student ID from the token
-    identity = get_jwt_identity()
-    student_id = identity.get('student_id')
+    token = data['token']
+    student_id = get_id(token)
 
     mysql = get_mysql()
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -172,7 +169,8 @@ def get_student_by_id(student_id):
 def update_student_profile():
     try:
         data = request.get_json()
-        student_id = data.get('student_id')
+        token = data['token']
+        student_id = get_student_id(token)
 
         # Optional fields that can be updated
         student_name = data.get('student_name')
