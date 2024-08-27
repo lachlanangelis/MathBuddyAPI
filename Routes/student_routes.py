@@ -172,7 +172,8 @@ def get_student_by_id(student_id):
 def update_student_profile():
     try:
         data = request.get_json()
-        student_id = data.get('student_id')
+        token = data['token']
+        student_id = get_student_id(token)
 
         # Optional fields that can be updated
         student_name = data.get('student_name')
