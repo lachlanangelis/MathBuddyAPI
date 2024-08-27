@@ -27,6 +27,7 @@ def getStudentQuiz():
         q.title AS quiz_title,
         q.description AS quiz_description,
         q.due_date,
+        q.time_limit,
         sq.score,
         sq.feedback AS student_feedback,
         sq.completed,
