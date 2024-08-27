@@ -11,11 +11,13 @@ auth_routes = Blueprint('auth_routes', __name__)
 def get_mysql():
     return current_app.config['mysql']
 
+
 @auth_routes.route('/login', methods=['POST'])
 def login():
     try:
         # Get MySQL connection
         mysql = get_mysql()
+
         # Get the JSON data from the request
         data = request.get_json()
         email = data.get('email')
@@ -29,17 +31,22 @@ def login():
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
         user = cursor.fetchone()
+        cursor.close()  # Close cursor after use
 
         # If the user is found, check the password
         if user:
-            stored_password = user['password']
-            if bcrypt.checkpw(password.encode('utf-8'), stored_password.encode('utf-8')):
+            stored_password = user.get('password')
+            if stored_password and bcrypt.checkpw(password.encode('utf-8'), stored_password.encode('utf-8')):
                 # Create an access token if the password is correct
-                access_token = create_access_token(identity={"email": email, "role": user["role"]})
+                access_token = create_access_token(identity={
+                    "email": email,
+                    "role": user.get("role"),
+                    "user_id": user.get("id")  # Include user_id in the identity
+                })
 
                 # Extract the full_name and role from the user data
-                full_name = user['full_name']
-                role = user['role']
+                full_name = user.get('full_name')
+                role = user.get('role')
 
                 # Return the token, full_name, and other user details
                 return jsonify({
@@ -56,8 +63,9 @@ def login():
             return jsonify({"message": "User not found"}), 404
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
+        # Log the exception details for debugging
+        print(f"Error: {e}")
+        return jsonify({"error": "An error occurred during login. Please try again later."}), 500
     
 # Define the signup route
 # TODO separate teacher and student signup
