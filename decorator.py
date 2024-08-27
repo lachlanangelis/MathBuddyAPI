@@ -112,7 +112,7 @@ def get_student_id(user_id):
         stu_id = cursor.fetchone()
         print(f"Student ID retrieved: {stu_id}")
         cursor.close()
-        return stu_id
+        return stu_id["student_id"]
     except Exception as e:
         print(f"Error querying student ID: {str(e)}")
         return None

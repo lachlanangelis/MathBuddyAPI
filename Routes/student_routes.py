@@ -18,7 +18,7 @@ def getStudentQuiz():
 
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        
+
         # Query to get all quizzes for a student
         sql_query = '''
         SELECT 
@@ -44,8 +44,11 @@ def getStudentQuiz():
         cursor.execute(sql_query, (student_id,))
         quizzes = cursor.fetchall()
 
+        print(f"Fetched quizzes: {quizzes}")  # Debug print
+
         cursor.close()
         return jsonify(quizzes)
+
 
 # Route to get student pending quizzes (not completed)
 @student_routes.route('/getStudentPendingQuizzes', methods=['POST'])
