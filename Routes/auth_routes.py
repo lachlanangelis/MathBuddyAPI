@@ -178,3 +178,59 @@ def signupStu():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+# parent signup route
+@auth_routes.route('/signupParent', methods=['POST'])
+def signup_parent():
+    try:
+        # Get MySQL connection
+        mysql = get_mysql()
+        # Get the JSON data from the request
+        data = request.get_json()
+        password = data.get('password')
+        email = data.get('email')
+        full_name = data.get('full_name')
+        phone = data.get('phone')
+        child_id = data.get('child_id')
+
+        # Validate the input
+        if not password or not email or not full_name or not phone or not child_id:
+            return jsonify({"error": "Missing required fields"}), 400
+
+        # Check if the email already exists in the database
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+        user = cursor.fetchone()
+
+        if user:
+            cursor.close()
+            return jsonify({"error": "Email already exists"}), 400
+
+        # Hash the password
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
+        # Insert the new user into the database
+        cursor.execute("INSERT INTO users (password, email, role, full_name, mobile_phone) VALUES (%s, %s, 'parent', %s, %s)",
+                       (hashed_password.decode('utf-8'), email, full_name, phone))
+        mysql.connection.commit()
+
+        # Retrieve the user_id of the newly inserted user
+        cursor.execute("SELECT user_id FROM users WHERE email = %s", (email,))
+        user_record = cursor.fetchone()
+        user_id = user_record['user_id'] if user_record else None
+
+        if not user_id:
+            cursor.close()
+            return jsonify({"error": "Failed to retrieve user ID"}), 500
+
+        # Insert into parents table
+        cursor.execute("INSERT INTO parents (parent_name, user_id, child_id) VALUES (%s, %s, %s)",
+                       (full_name, user_id, child_id))
+        mysql.connection.commit()
+
+        cursor.close()
+
+        return jsonify({"message": "Parent registered successfully"}), 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
