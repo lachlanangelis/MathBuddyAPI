@@ -1,4 +1,5 @@
 import MySQLdb.cursors
+from decorator import *
 from flask import Flask, request, jsonify
 from flask_mysqldb import MySQL
 from flask import Blueprint, jsonify, current_app
@@ -13,10 +14,13 @@ def get_mysql():
 
 #endpoint to display the classes the teacher teaches
 
-@teacher_routes.route('/teacher_classes', methods=['GET'])
+@teacher_routes.route('/teacher_classes', methods=['POST'])
 def get_teacher_classes():
     try:
-        teacher_id = request.args.get('teacher_id')
+        data = request.get_json()
+        token = data['token']
+        teacher_id = get_id(token)
+        #teacher_id = request.args.get('teacher_id')
         if not teacher_id:
             return jsonify({"error": "Missing teacher_id parameter"}), 400
         
@@ -57,7 +61,9 @@ def create_class():
     try:
         data = request.get_json()
         class_name = data.get('class_name')
-        teacher_id = data.get('teacher_id')
+        token = data['token']
+        teacher_id = get_id(token)
+        #teacher_id = data.get('teacher_id')
 
         if not class_name or not teacher_id:
             return jsonify({"error": "Missing class_name or teacher_id"}), 400
@@ -158,10 +164,13 @@ def get_class_feedback():
 
 #endpoint to display lessons 
 
-@teacher_routes.route('/teacher_lessons', methods=['GET'])
+@teacher_routes.route('/teacher_lessons', methods=['POST'])
 def get_teacher_lessons():
     try:
-        teacher_id = request.args.get('teacher_id')
+        data = request.get_json()
+        token = data['token']
+        teacher_id = get_id(token)
+        #teacher_id = request.args.get('teacher_id')
         if not teacher_id:
             return jsonify({"error": "Missing teacher_id parameter"}), 400
 
@@ -196,9 +205,12 @@ def get_teacher_lessons():
         return jsonify({"error": str(e)}), 500
 
 #endpoint to display personal information of teachers
-@teacher_routes.route('/teacher/<int:teacher_id>', methods=['GET'])
-def get_teacher_by_id(teacher_id):
+@teacher_routes.route('/teacherInfo', methods=['POST'])
+def get_teacher_by_id():
     try:
+        data = request.get_json()
+        token = data['token']
+        teacher_id = get_id(token)
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         query = """
@@ -241,7 +253,9 @@ def update_teacher_profile():
     try:
         # Retrieve JSON data from the request
         data = request.get_json()
-        teacher_id = data.get('teacher_id')
+        token = data['token']
+        teacher_id = get_id(token)
+        #teacher_id = data.get('teacher_id')
 
         # Optional fields that can be updated
         teacher_name = data.get('teacher_name')
