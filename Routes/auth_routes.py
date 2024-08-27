@@ -41,7 +41,7 @@ def login():
                 access_token = create_access_token(identity={
                     "email": email,
                     "role": user.get("role"),
-                    "user_id": user.get("id")  # Include user_id in the identity
+                    "user_id": user.get("user_id")  # Include user_id in the identity
                 })
 
                 # Extract the full_name and role from the user data
@@ -53,7 +53,7 @@ def login():
                     "access_token": access_token,
                     "personObj": {
                         "full_name": full_name,
-                        "role": role,
+                        "role": role
                         # Include any other relevant user details here
                     }
                 }), 200

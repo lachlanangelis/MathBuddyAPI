@@ -1,6 +1,7 @@
 import MySQLdb.cursors
 from flask_mysqldb import MySQL
 from flask import Blueprint, jsonify, current_app, Response, request
+from decorator import *
 
 student_routes = Blueprint('student_routes', __name__)
 
@@ -12,7 +13,8 @@ def get_mysql():
 def getStudentQuiz():
     if request.method == 'POST':
         data = request.get_json()
-        student_id = data['student_id']
+        token = data['token']
+        student_id = get_id(token)
 
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)

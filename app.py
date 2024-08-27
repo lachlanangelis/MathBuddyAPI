@@ -10,6 +10,7 @@ from Routes.auth_routes import auth_routes
 from Routes.ollama_routes import ollama_routes
 from Routes.teacher_routes import teacher_routes
 from Routes.parent_routes import parent_routes
+from decorator import decorator_routes
 from env_var import *
 
 app = Flask(__name__)
@@ -21,6 +22,7 @@ app.register_blueprint(ollama_routes)
 app.register_blueprint(student_routes)
 app.register_blueprint(teacher_routes)
 app.register_blueprint(parent_routes)
+app.register_blueprint(decorator_routes)
 
 
 app.config['MYSQL_HOST'] = MYSQL_HOST
