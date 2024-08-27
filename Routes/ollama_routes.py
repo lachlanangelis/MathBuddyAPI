@@ -40,3 +40,31 @@ def respond_to_query():
         else:
             # Return an error if no query was provided
             return jsonify({"error": "No query provided"}), 400
+
+
+def get_quizQuery(results):
+    student = results['student']
+    result = results['result']
+
+    query = f"""Could you please provide 1 sentence feedback for the following student:
+    Student Name: {student}
+    Result : {result} 
+    """
+    return query
+
+def get_feedbackPrompt(query):
+    prompt = f"""You are a grade school math teacher that is attempting to help tutor kids on mathematical problems.
+    Your goal here is to provide feedback based on quiz results.
+
+    Generate your response by following the steps below:
+    1. You are generating feedback based on results. E.g. A score of 100% is perfect, 0% is not good.
+    2. Remember that you are generating feedback for grade school students.
+    3. You MUST keep feedback to 1 sentence only.
+
+    Constraints:
+    1. DONT NOT PROVIDE ANY EXPLANATION ON HOW THEY CAN GET BETTER
+    2. DO NOT SAY ANYTHING THAT WOULD BE CONSIDERED RUDE TO ANY CHILDREN
+
+    CONTENT:
+    {query}
+    """

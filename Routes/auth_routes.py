@@ -11,7 +11,6 @@ auth_routes = Blueprint('auth_routes', __name__)
 def get_mysql():
     return current_app.config['mysql']
 
-# Define the login route
 @auth_routes.route('/login', methods=['POST'])
 def login():
     try:
@@ -42,11 +41,14 @@ def login():
                 full_name = user['full_name']
                 role = user['role']
 
-                # Return the token, full_name, and role
+                # Return the token, full_name, and other user details
                 return jsonify({
                     "access_token": access_token,
-                    "full_name": full_name,
-                    "role": role
+                    "personObj": {
+                        "full_name": full_name,
+                        "role": role,
+                        # Include any other relevant user details here
+                    }
                 }), 200
             else:
                 return jsonify({"message": "Invalid credentials"}), 401
@@ -55,7 +57,7 @@ def login():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
     
 # Define the signup route
 # TODO separate teacher and student signup
