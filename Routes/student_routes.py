@@ -1,6 +1,4 @@
 import MySQLdb.cursors
-from flask_mysqldb import MySQL
-from flask import Blueprint, jsonify, current_app, Response, request
 from decorator import *
 
 student_routes = Blueprint('student_routes', __name__)
@@ -124,9 +122,13 @@ def get_current_quiz(student_id):
         return jsonify({"error": str(e)}), 500
 
 # Route to display personal information of students
-@student_routes.route('/student/<int:student_id>', methods=['GET'])
-def get_student_by_id(student_id):
+@student_routes.route('/student', methods=['POST'])
+def get_student_by_id():
     try:
+        data = request.get_json()
+        token = data['token']
+        student_id = get_id(token)
+
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 

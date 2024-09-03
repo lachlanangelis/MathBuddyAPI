@@ -6,7 +6,6 @@ ollama_routes = Blueprint('routes', __name__)
 
 
 # Get Response with just Ollama
-@ollama_routes.route('/getResponse')
 def get_response(query):
     response = ollama.chat(model='llama3', messages=[
         {
@@ -14,11 +13,14 @@ def get_response(query):
             'content': query,
         },
     ])
-    return jsonify(response['message']['content'])
+
+    return jsonify({"message": response['message']['content']})
+
 
 def get_answer(query):
     response = ollama.chat(model='llama3', messages=[{'role': 'user', 'content': query}])
     return response['message']['content']
+
 
 # Get Response through RAG App
 @ollama_routes.route('/query', methods=['POST'])
@@ -45,26 +47,32 @@ def respond_to_query():
 def get_quizQuery(results):
     student = results['student']
     result = results['result']
+    quiz_topic = results['quiz_topic']
 
-    query = f"""Could you please provide 1 sentence feedback for the following student:
-    Student Name: {student}
-    Result : {result} 
+    query = f"""Provide a single sentence of feedback for the following student based on their quiz result:
+    - Student Name: {student}
+    - Result: {result}% 
     """
     return query
 
-def get_feedbackPrompt(query):
-    prompt = f"""You are a grade school math teacher that is attempting to help tutor kids on mathematical problems.
-    Your goal here is to provide feedback based on quiz results.
 
-    Generate your response by following the steps below:
-    1. You are generating feedback based on results. E.g. A score of 100% is perfect, 0% is not good.
-    2. Remember that you are generating feedback for grade school students.
-    3. You MUST keep feedback to 1 sentence only.
+def get_feedbackPrompt(query):
+    prompt = f"""You are a grade school math teacher providing feedback on a student's quiz results.
+
+    Your goal is to generate a single sentence of feedback that is appropriate for a grade school student.
+
+    Guidelines:
+    1. If the result is 90% or higher, provide positive feedback.
+    2. If the result is between 50% and 89%, provide encouraging feedback.
+    3. If the result is below 50%, provide supportive feedback that encourages the student to learn more.
 
     Constraints:
-    1. DONT NOT PROVIDE ANY EXPLANATION ON HOW THEY CAN GET BETTER
-    2. DO NOT SAY ANYTHING THAT WOULD BE CONSIDERED RUDE TO ANY CHILDREN
+    1. Do not give any further explanation or suggestions for improvement.
+    2. Avoid mentioning that you were given specific context.
+    3. Ensure the feedback is friendly and encouraging, never rude or discouraging.
 
-    CONTENT:
+    Please respond to the following request:
+
     {query}
     """
+    return prompt

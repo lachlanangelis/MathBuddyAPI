@@ -86,11 +86,12 @@ def generate_quiz_questions(quiz_id, topic, number_of_questions, difficulty):
 
 
 # Function to generate feedback using an LLM through Ollama
-def generate_feedback(student_name, grade):
+# Function to generate feedback using an LLM through Ollama and store it in the database
+def generate_feedback(student_id, quiz_id, student_name, grade):
     # Prepare the data for the feedback generation
     results = {
         "student": student_name,
-        "result": grade
+        "result": grade,
     }
 
     # Create the query for the feedback prompt
@@ -99,35 +100,31 @@ def generate_feedback(student_name, grade):
     # Create the full feedback prompt
     prompt = get_feedbackPrompt(query)
 
-    # Send the request to Ollama LLM (assuming Ollama has a REST API)
+    # Send the request to Ollama LLM
     response = get_response(prompt)
 
-    # Handle the response
-    feedback = response.json().get('feedback')
-    print(feedback)
-    return feedback
+    # Extract JSON data from the Response object
+    feedback_content = response.get_json()
 
+    # Store feedback in the database
+    mysql = get_mysql()
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-@quiz_routes.route('/test_feedback', methods=['POST'])
-def test_feedback():
-    try:
-        # Retrieve the JSON data from the request
-        data = request.get_json()
-        student_name = data.get('student_name')
-        grade = data.get('grade')
+    cursor.execute("""
+        INSERT INTO feedback (student_id, quiz_id, feedback_text_ai)
+        VALUES (%s, %s, %s)
+    """, (student_id, quiz_id, feedback_content['response']))
 
-        if not student_name or grade is None:
-            return jsonify({"error": "Missing required parameters"}), 400
+    mysql.connection.commit()
+    cursor.close()
 
-        # Generate feedback directly
-        feedback = generate_feedback(student_name, grade)
+    feedback = {"feedback": feedback_content}
 
-        # Return the generated feedback
-        return jsonify({"feedback": feedback}), 200
+    print(feedback)  # Debugging to ensure it looks correct
 
-    except Exception as e:
-        print(f"Error occurred: {e}")
-        return jsonify({"error": str(e)}), 500
+    # Return feedback as JSON response
+    return jsonify(feedback)
+
 
 # Route to grade quiz
 @quiz_routes.route('/submit_quiz', methods=['POST'])
@@ -186,20 +183,22 @@ def submit_quiz():
         mysql.connection.commit()
         cursor.close()
 
-        # Fetch student name (assuming you have this data)
+        # Fetch student name
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute("""
             SELECT student_name
             FROM students
             WHERE student_id = %s
         """, (student_id,))
         student_name = cursor.fetchone()['student_name']
+        cursor.close()
 
         # Return the grade to the student immediately
         response = jsonify({"message": "Quiz submitted and graded successfully", "grade": grade}), 200
 
-        # Generate feedback asynchronously
+        # Generate feedback asynchronously and store it in the database
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            executor.submit(generate_feedback, student_name, grade)
+            executor.submit(generate_feedback(student_id, quiz_id, student_name, grade))
 
         return response
 
