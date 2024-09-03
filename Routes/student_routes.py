@@ -84,39 +84,43 @@ def get_student_pending_quizzes():
         return jsonify(pending_quizzes)
 
 # Route to get students current quiz, this should list the questions.
-@student_routes.route('/student/<int:student_id>/current_quiz', methods=['GET'])
-def get_current_quiz(student_id):
+@student_routes.route('/current_quiz', methods=['POST'])
+def get_current_quiz():
     try:
+        data = request.get_json()
+        token = data['token']
+        quiz_id = data['quiz_id']
+
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-        # Query to get the current quiz assigned to the student's class
+        # Query to get the quiz details and questions
         query = """
-        SELECT 
-            q.quiz_id,
-            q.title AS quiz_title,
-            q.description AS quiz_description,
-            qq.question_id,
-            qq.question_text
-        FROM 
-            quizzes q
-        JOIN 
-            quiz_questions qq ON q.quiz_id = qq.quiz_id
-        JOIN 
-            student_quizzes sq ON sq.quiz_id = q.quiz_id
-        JOIN 
-            students s ON s.student_id = sq.student_id
-        WHERE 
-            s.student_id = %s AND sq.completed = 0
+        SELECT q.quiz_id, q.time_limit, qq.question_id, qq.question_text, qq.question_number
+        FROM quizzes q
+        JOIN quiz_questions qq ON q.quiz_id = qq.quiz_id
+        WHERE q.quiz_id = %s
+        ORDER BY qq.question_number
         """
-        cursor.execute(query, (student_id,))
-        quizzes = cursor.fetchall()
+        cursor.execute(query, (quiz_id,))
+        results = cursor.fetchall()
         cursor.close()
 
-        if quizzes:
-            return jsonify(quizzes), 200
+        if results:
+            # Separate quiz details and questions
+            quiz_info = {
+                'time_limit': results[0]['time_limit'],
+                'questions': []
+            }
+            for row in results:
+                quiz_info['questions'].append({
+                    'question_id': row['question_id'],
+                    'question_text': row['question_text'],
+                    'question_number': row['question_number']
+                })
+            return jsonify(quiz_info), 200
         else:
-            return jsonify({"message": "No current quiz found for this student"}), 404
+            return jsonify({"message": "No questions found for the specified quiz"}), 404
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
