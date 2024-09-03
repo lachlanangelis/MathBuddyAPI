@@ -6,8 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="a2d82f30-343e-4019-839f-008e13206ccd" name="Changes" comment="Initial Commit">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Routes/ollama_routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/Routes/ollama_routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Routes/quiz_routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/Routes/quiz_routes.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Routes/student_routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/Routes/student_routes.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -189,7 +187,7 @@
       <workItem from="1724131664289" duration="973000" />
       <workItem from="1724718743241" duration="13788000" />
       <workItem from="1724737070684" duration="2390000" />
-      <workItem from="1725321382542" duration="5006000" />
+      <workItem from="1725321382542" duration="5723000" />
     </task>
     <task id="LOCAL-00001" summary="Initial Commit">
       <option name="closed" value="true" />

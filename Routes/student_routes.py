@@ -172,112 +172,53 @@ def get_student_by_id():
 def update_student_profile():
     try:
         data = request.get_json()
-        token = data['token']
+        token = data.get('token')
         student_id = get_student_id(token)
-
-        # Optional fields that can be updated
-        student_name = data.get('student_name')
-        date_of_birth = data.get('date_of_birth')
-        gender = data.get('gender')
-        full_name = data.get('full_name')
-        preferred_first_name = data.get('preferred_first_name')
-        city = data.get('city')
-        state = data.get('state')
-        postal_code = data.get('postal_code')
-        address = data.get('address')
-        mobile_phone = data.get('mobile_phone')
-        home_phone = data.get('home_phone')
-        email = data.get('email')
-        password = data.get('password')
 
         if not student_id:
             return jsonify({"error": "Missing student_id parameter"}), 400
 
-        mysql = get_mysql()
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        # Get optional fields
+        fields = {
+            "student_name": data.get('student_name'),
+            "date_of_birth": data.get('date_of_birth'),
+            "gender": data.get('gender'),
+            "full_name": data.get('full_name'),
+            "preferred_first_name": data.get('preferred_first_name'),
+            "city": data.get('city'),
+            "state": data.get('state'),
+            "postal_code": data.get('postal_code'),
+            "address": data.get('address'),
+            "mobile_phone": data.get('mobile_phone'),
+            "home_phone": data.get('home_phone'),
+            "email": data.get('email'),
+            "password": data.get('password')
+        }
 
-        update_fields_students = []
-        update_fields_users = []
-        parameters_students = []
-        parameters_users = []
-
-        if student_name:
-            update_fields_students.append("student_name = %s")
-            parameters_students.append(student_name)
-
-        if date_of_birth:
-            update_fields_users.append("date_of_birth = %s")
-            parameters_users.append(date_of_birth)
-
-        if gender:
-            update_fields_users.append("gender = %s")
-            parameters_users.append(gender)
-
-        if full_name:
-            update_fields_users.append("full_name = %s")
-            parameters_users.append(full_name)
-
-        if preferred_first_name:
-            update_fields_users.append("preferred_first_name = %s")
-            parameters_users.append(preferred_first_name)
-
-        if city:
-            update_fields_users.append("city = %s")
-            parameters_users.append(city)
-
-        if state:
-            update_fields_users.append("state = %s")
-            parameters_users.append(state)
-
-        if postal_code:
-            update_fields_users.append("postal_code = %s")
-            parameters_users.append(postal_code)
-
-        if address:
-            update_fields_users.append("address = %s")
-            parameters_users.append(address)
-
-        if mobile_phone:
-            update_fields_users.append("mobile_phone = %s")
-            parameters_users.append(mobile_phone)
-
-        if home_phone:
-            update_fields_users.append("home_phone = %s")
-            parameters_users.append(home_phone)
-
-        if email:
-            update_fields_users.append("email = %s")
-            parameters_users.append(email)
-
-        if password:
-            update_fields_users.append("password = %s")
-            parameters_users.append(password)
+        # Separate fields for students and users
+        update_fields_students = {key: value for key, value in fields.items() if key in ["student_name"] and value}
+        update_fields_users = {key: value for key, value in fields.items() if key in ["date_of_birth", "gender", "full_name", "preferred_first_name", "city", "state", "postal_code", "address", "mobile_phone", "home_phone", "email", "password"] and value}
 
         if not update_fields_students and not update_fields_users:
             return jsonify({"error": "No valid fields provided for update"}), 400
 
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
         if update_fields_students:
-            update_students_query = f"""
-            UPDATE students
-            SET {', '.join(update_fields_students)}
-            WHERE student_id = %s
-            """
-            parameters_students.append(student_id)
+            set_clause = ', '.join(f"{key} = %s" for key in update_fields_students)
+            update_students_query = f"UPDATE students SET {set_clause} WHERE student_id = %s"
+            parameters_students = list(update_fields_students.values()) + [student_id]
             cursor.execute(update_students_query, tuple(parameters_students))
 
         if update_fields_users:
-            cursor.execute("""
-                SELECT user_id FROM students WHERE student_id = %s
-            """, (student_id,))
+            cursor.execute("SELECT user_id FROM students WHERE student_id = %s", (student_id,))
             user = cursor.fetchone()
 
             if user:
-                update_users_query = f"""
-                UPDATE users
-                SET {', '.join(update_fields_users)}
-                WHERE user_id = %s
-                """
-                parameters_users.append(user['user_id'])
+                set_clause = ', '.join(f"{key} = %s" for key in update_fields_users)
+                update_users_query = f"UPDATE users SET {set_clause} WHERE user_id = %s"
+                parameters_users = list(update_fields_users.values()) + [user['user_id']]
                 cursor.execute(update_users_query, tuple(parameters_users))
 
         mysql.connection.commit()
@@ -287,6 +228,7 @@ def update_student_profile():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # Route to get student feedback for a specific quiz
 @student_routes.route('/student/<int:student_id>/quiz_results/<int:quiz_id>', methods=['GET'])
