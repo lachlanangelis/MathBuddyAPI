@@ -174,9 +174,10 @@ def update_student_profile():
         data = request.get_json()
         token = data.get('token')
         student_id = get_student_id(token)
+        user_id = get_id(token)
 
-        if not student_id:
-            return jsonify({"error": "Missing student_id parameter"}), 400
+        if not student_id or not user_id:
+            return jsonify({"error": "Missing student_id or user_id parameter"}), 400
 
         # Get optional fields
         fields = {
@@ -205,21 +206,19 @@ def update_student_profile():
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
+        # Update student information
         if update_fields_students:
             set_clause = ', '.join(f"{key} = %s" for key in update_fields_students)
             update_students_query = f"UPDATE students SET {set_clause} WHERE student_id = %s"
             parameters_students = list(update_fields_students.values()) + [student_id]
             cursor.execute(update_students_query, tuple(parameters_students))
 
+        # Update user information
         if update_fields_users:
-            cursor.execute("SELECT user_id FROM students WHERE student_id = %s", (student_id,))
-            user = cursor.fetchone()
-
-            if user:
-                set_clause = ', '.join(f"{key} = %s" for key in update_fields_users)
-                update_users_query = f"UPDATE users SET {set_clause} WHERE user_id = %s"
-                parameters_users = list(update_fields_users.values()) + [user['user_id']]
-                cursor.execute(update_users_query, tuple(parameters_users))
+            set_clause = ', '.join(f"{key} = %s" for key in update_fields_users)
+            update_users_query = f"UPDATE users SET {set_clause} WHERE user_id = %s"
+            parameters_users = list(update_fields_users.values()) + [user_id]
+            cursor.execute(update_users_query, tuple(parameters_users))
 
         mysql.connection.commit()
         cursor.close()
@@ -228,7 +227,6 @@ def update_student_profile():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 # Route to get student feedback for a specific quiz
 @student_routes.route('/student/<int:student_id>/quiz_results/<int:quiz_id>', methods=['GET'])
