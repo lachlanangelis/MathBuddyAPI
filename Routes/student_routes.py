@@ -84,39 +84,43 @@ def get_student_pending_quizzes():
         return jsonify(pending_quizzes)
 
 # Route to get students current quiz, this should list the questions.
-@student_routes.route('/student/<int:student_id>/current_quiz', methods=['GET'])
-def get_current_quiz(student_id):
+@student_routes.route('/current_quiz', methods=['POST'])
+def get_current_quiz():
     try:
+        data = request.get_json()
+        token = data['token']
+        quiz_id = data['quiz_id']
+
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-        # Query to get the current quiz assigned to the student's class
+        # Query to get the quiz details and questions
         query = """
-        SELECT 
-            q.quiz_id,
-            q.title AS quiz_title,
-            q.description AS quiz_description,
-            qq.question_id,
-            qq.question_text
-        FROM 
-            quizzes q
-        JOIN 
-            quiz_questions qq ON q.quiz_id = qq.quiz_id
-        JOIN 
-            student_quizzes sq ON sq.quiz_id = q.quiz_id
-        JOIN 
-            students s ON s.student_id = sq.student_id
-        WHERE 
-            s.student_id = %s AND sq.completed = 0
+        SELECT q.quiz_id, q.time_limit, qq.question_id, qq.question_text, qq.question_number
+        FROM quizzes q
+        JOIN quiz_questions qq ON q.quiz_id = qq.quiz_id
+        WHERE q.quiz_id = %s
+        ORDER BY qq.question_number
         """
-        cursor.execute(query, (student_id,))
-        quizzes = cursor.fetchall()
+        cursor.execute(query, (quiz_id,))
+        results = cursor.fetchall()
         cursor.close()
 
-        if quizzes:
-            return jsonify(quizzes), 200
+        if results:
+            # Separate quiz details and questions
+            quiz_info = {
+                'time_limit': results[0]['time_limit'],
+                'questions': []
+            }
+            for row in results:
+                quiz_info['questions'].append({
+                    'question_id': row['question_id'],
+                    'question_text': row['question_text'],
+                    'question_number': row['question_number']
+                })
+            return jsonify(quiz_info), 200
         else:
-            return jsonify({"message": "No current quiz found for this student"}), 404
+            return jsonify({"message": "No questions found for the specified quiz"}), 404
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -173,10 +177,11 @@ def update_student_profile():
     try:
         data = request.get_json()
         token = data.get('token')
-        student_id = get_student_id(token)
+        student_id = get_id(token)
+        user_id = get_uid(token)
 
-        if not student_id:
-            return jsonify({"error": "Missing student_id parameter"}), 400
+        if not student_id or not user_id:
+            return jsonify({"error": "Missing student_id or user_id parameter"}), 400
 
         # Get optional fields
         fields = {
@@ -205,21 +210,19 @@ def update_student_profile():
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
+        # Update student information
         if update_fields_students:
             set_clause = ', '.join(f"{key} = %s" for key in update_fields_students)
             update_students_query = f"UPDATE students SET {set_clause} WHERE student_id = %s"
             parameters_students = list(update_fields_students.values()) + [student_id]
             cursor.execute(update_students_query, tuple(parameters_students))
 
+        # Update user information
         if update_fields_users:
-            cursor.execute("SELECT user_id FROM students WHERE student_id = %s", (student_id,))
-            user = cursor.fetchone()
-
-            if user:
-                set_clause = ', '.join(f"{key} = %s" for key in update_fields_users)
-                update_users_query = f"UPDATE users SET {set_clause} WHERE user_id = %s"
-                parameters_users = list(update_fields_users.values()) + [user['user_id']]
-                cursor.execute(update_users_query, tuple(parameters_users))
+            set_clause = ', '.join(f"{key} = %s" for key in update_fields_users)
+            update_users_query = f"UPDATE users SET {set_clause} WHERE user_id = %s"
+            parameters_users = list(update_fields_users.values()) + [user_id]
+            cursor.execute(update_users_query, tuple(parameters_users))
 
         mysql.connection.commit()
         cursor.close()
@@ -228,7 +231,6 @@ def update_student_profile():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 # Route to get student feedback for a specific quiz
 @student_routes.route('/student/<int:student_id>/quiz_results/<int:quiz_id>', methods=['GET'])
@@ -359,6 +361,43 @@ def complete_quiz(student_id, quiz_id):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@student_routes.route('/getStudentCompletedQuizzes', methods=['POST'])
+def get_student_completed_quizzes():
+    if request.method == 'POST':
+        data = request.get_json()
+        token = data['token']
+        student_id = get_id(token)
+
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # Query to get only quizzes that have been completed
+        sql_query = '''
+        SELECT 
+            s.student_id,
+            s.student_name,
+            q.quiz_id,
+            q.title AS quiz_title,
+            q.description AS quiz_description,
+            sq.completed_at,
+            sq.score,
+            sq.feedback AS student_feedback
+        FROM 
+            students s
+        JOIN 
+            student_quizzes sq ON s.student_id = sq.student_id
+        JOIN 
+            quizzes q ON sq.quiz_id = q.quiz_id
+        WHERE 
+            s.student_id = %s AND sq.completed = 1
+        '''
+        cursor.execute(sql_query, (student_id,))
+        completed_quizzes = cursor.fetchall()
+
+        cursor.close()
+        return jsonify(completed_quizzes)
 
 # Route to save a quiz, this includes marking the quiz, sending the prompt for AI feedback, and storing the result.
 # @student_routes.route('/submit_quiz', methods=['POST'])
