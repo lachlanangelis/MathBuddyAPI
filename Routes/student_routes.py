@@ -358,6 +358,43 @@ def complete_quiz(student_id, quiz_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+@student_routes.route('/getStudentCompletedQuizzes', methods=['POST'])
+def get_student_completed_quizzes():
+    if request.method == 'POST':
+        data = request.get_json()
+        token = data['token']
+        student_id = get_id(token)
+
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # Query to get only quizzes that have been completed
+        sql_query = '''
+        SELECT 
+            s.student_id,
+            s.student_name,
+            q.quiz_id,
+            q.title AS quiz_title,
+            q.description AS quiz_description,
+            sq.completed_at,
+            sq.score,
+            sq.feedback AS student_feedback
+        FROM 
+            students s
+        JOIN 
+            student_quizzes sq ON s.student_id = sq.student_id
+        JOIN 
+            quizzes q ON sq.quiz_id = q.quiz_id
+        WHERE 
+            s.student_id = %s AND sq.completed = 1
+        '''
+        cursor.execute(sql_query, (student_id,))
+        completed_quizzes = cursor.fetchall()
+
+        cursor.close()
+        return jsonify(completed_quizzes)
+
 # Route to save a quiz, this includes marking the quiz, sending the prompt for AI feedback, and storing the result.
 # @student_routes.route('/submit_quiz', methods=['POST'])
 # still need ai functions to mark and give feedback!
