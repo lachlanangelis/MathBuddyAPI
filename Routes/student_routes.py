@@ -173,8 +173,8 @@ def update_student_profile():
     try:
         data = request.get_json()
         token = data.get('token')
-        student_id = get_student_id(token)
-        user_id = get_id(token)
+        student_id = get_id(token)
+        user_id = get_uid(token)
 
         if not student_id or not user_id:
             return jsonify({"error": "Missing student_id or user_id parameter"}), 400

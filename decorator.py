@@ -102,6 +102,20 @@ def get_id(jwt_token):
         print(f"Error decoding token: {str(e)}")
         return {"error": str(e)}, 500
 
+
+def get_uid(jwt_token):
+    try:
+        decoded_token = jwt.decode(jwt_token, api_key, algorithms=["HS256"])
+        sub = decoded_token.get('sub', {})
+        if sub:
+            role = sub.get('role')
+            user_id = sub.get('user_id')
+            return user_id
+    except Exception as e:
+        print(f"Error querying student ID: {str(e)}")
+        return None
+
+
 def get_student_id(user_id):
     try:
         mysql = get_mysql()
