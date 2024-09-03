@@ -1,7 +1,6 @@
 import MySQLdb.cursors
 from decorator import *
 import ollama
-from bs4 import BeautifulSoup
 from googlesearch import search
 import requests
 from flask import Blueprint, jsonify, request
