@@ -39,16 +39,19 @@ def search_videos():
 def search_articles():
     try:
         data = request.get_json()
-        weak_topics = data.get('weak_topics')
+        weak_topics = data.get('weak_topics', [])
 
         if not weak_topics:
-            return jsonify({"error": "No weak topics provided"}), 400
+            return jsonify({"message": "No weak topics provided"}), 400
 
-        # Build search query from weak topics
-        search_query = ' '.join(weak_topics) + ' learning resources'
+        search_results = []
 
-        # Perform Google search
-        search_results = search(search_query, num_results=3)  # Limit to 3 results
+        for topic in weak_topics:
+            search_query = f"{topic} tutorial"
+            # Perform Google search and limit results to 5
+            results = search(search_query, num_results=5)
+            
+            search_results.extend(results)
 
         if search_results:
             return jsonify({"articles": search_results}), 200
