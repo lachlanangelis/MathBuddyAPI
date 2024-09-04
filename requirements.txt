@@ -5,3 +5,5 @@ ollama
 chromadb
 langchain_community
 sentence_transformers
+google_search
+youtubesearcherpython
