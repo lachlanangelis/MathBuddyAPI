@@ -1,11 +1,5 @@
-import MySQLdb.cursors
-from decorator import *
-import ollama
-from bs4 import BeautifulSoup
-from googlesearch import search
-import requests
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from googlesearch import search
 from youtubesearchpython import VideosSearch
 
 Lresources = Blueprint('Lresources', __name__)

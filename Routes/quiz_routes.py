@@ -1,8 +1,7 @@
 import concurrent.futures
-
 import MySQLdb.cursors
 from flask import current_app
-
+from decorator import *
 from Routes.ollama_routes import *
 
 quiz_routes = Blueprint('quiz_routes', __name__)
@@ -88,51 +87,70 @@ def generate_quiz_questions(quiz_id, topic, number_of_questions, difficulty):
 # Function to generate feedback using an LLM through Ollama
 # Function to generate feedback using an LLM through Ollama and store it in the database
 def generate_feedback(student_id, quiz_id, student_name, grade):
-    # Prepare the data for the feedback generation
-    results = {
-        "student": student_name,
-        "result": grade,
-    }
+    from app import app  # Import your Flask app
 
-    # Create the query for the feedback prompt
-    query = get_quizQuery(results)
+    with app.app_context():  # Push an application context
+        try:
+            # Prepare the data for the feedback generation
+            results = {
+                "student": student_name,
+                "result": grade,
+            }
+            print(f"Generating feedback for: {results}")  # Debugging statement
 
-    # Create the full feedback prompt
-    prompt = get_feedbackPrompt(query)
+            # Create the query for the feedback prompt
+            query = get_quizQuery(results)
+            print(f"Generated quiz query: {query}")  # Debugging statement
 
-    # Send the request to Ollama LLM
-    response = get_response(prompt)
+            # Create the full feedback prompt
+            prompt = get_feedbackPrompt(query)
+            print(f"Generated feedback prompt: {prompt}")  # Debugging statement
 
-    # Extract JSON data from the Response object
-    feedback_content = response.get_json()
+            # Send the request to Ollama LLM
+            response = get_response(prompt)
+            print(f"Response from LLM: {response}")  # Debugging statement
 
-    # Store feedback in the database
-    mysql = get_mysql()
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            # Extract JSON data from the Response object
+            feedback_content = response.get_json()
+            print(f"Extracted feedback content: {feedback_content}")  # Debugging statement
 
-    cursor.execute("""
-        INSERT INTO feedback (student_id, quiz_id, feedback_text_ai)
-        VALUES (%s, %s, %s)
-    """, (student_id, quiz_id, feedback_content['response']))
+            if 'response' not in feedback_content:
+                raise ValueError("No 'response' field in feedback_content")  # Error handling
 
-    mysql.connection.commit()
-    cursor.close()
+            # Store feedback in the database
+            mysql = get_mysql()
+            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-    feedback = {"feedback": feedback_content}
+            cursor.execute("""
+                INSERT INTO feedback (student_id, quiz_id, feedback_text_ai)
+                VALUES (%s, %s, %s)
+            """, (student_id, quiz_id, feedback_content['response']))
 
-    print(feedback)  # Debugging to ensure it looks correct
+            mysql.connection.commit()
+            cursor.close()
+            print("Feedback stored successfully in the database.")  # Debugging statement
 
-    # Return feedback as JSON response
-    return jsonify(feedback)
+            feedback = {"feedback": feedback_content}
+
+            print(f"Final feedback object: {feedback}")  # Debugging statement
+
+            # Return feedback as JSON response
+            return jsonify(feedback)
+
+        except Exception as e:
+            print(f"Error in generate_feedback: {e}")  # Debugging statement
+            return jsonify({"error": str(e)})
 
 
-# Route to grade quiz
+
+
 @quiz_routes.route('/submit_quiz', methods=['POST'])
 def submit_quiz():
     try:
         # Retrieve the JSON data from the request
         data = request.get_json()
-        student_id = data.get('student_id')
+        token = data['token']
+        student_id = get_id(token)
         quiz_id = data.get('quiz_id')
         student_answers = data.get('answers')  # Expected to be a dict with question_id as keys
 
@@ -194,13 +212,13 @@ def submit_quiz():
         cursor.close()
 
         # Return the grade to the student immediately
-        response = jsonify({"message": "Quiz submitted and graded successfully", "grade": grade}), 200
+        response = jsonify({"message": "Quiz submitted and graded successfully", "grade": grade})
 
         # Generate feedback asynchronously and store it in the database
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            executor.submit(generate_feedback(student_id, quiz_id, student_name, grade))
+            executor.submit(generate_feedback, student_id, quiz_id, student_name, grade)
 
-        return response
+        return response, 200
 
     except Exception as e:
         print(f"Error occurred: {e}")

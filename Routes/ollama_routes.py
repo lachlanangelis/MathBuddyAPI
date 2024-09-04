@@ -47,7 +47,6 @@ def respond_to_query():
 def get_quizQuery(results):
     student = results['student']
     result = results['result']
-    quiz_topic = results['quiz_topic']
 
     query = f"""Provide a single sentence of feedback for the following student based on their quiz result:
     - Student Name: {student}
