@@ -114,8 +114,9 @@ def generate_feedback(student_id, quiz_id, student_name, grade):
             feedback_content = response.get_json()
             print(f"Extracted feedback content: {feedback_content}")  # Debugging statement
 
-            if 'response' not in feedback_content:
-                raise ValueError("No 'response' field in feedback_content")  # Error handling
+            # Check if 'message' is in feedback_content, since that's where the feedback is stored
+            if 'message' not in feedback_content:
+                raise ValueError("No 'message' field in feedback_content")  # Error handling
 
             # Store feedback in the database
             mysql = get_mysql()
@@ -124,7 +125,7 @@ def generate_feedback(student_id, quiz_id, student_name, grade):
             cursor.execute("""
                 INSERT INTO feedback (student_id, quiz_id, feedback_text_ai)
                 VALUES (%s, %s, %s)
-            """, (student_id, quiz_id, feedback_content['response']))
+            """, (student_id, quiz_id, feedback_content['message']))
 
             mysql.connection.commit()
             cursor.close()
