@@ -1,12 +1,11 @@
 import MySQLdb.cursors
-from decorator import *
-from flask import Flask, request, jsonify
-from flask_mysqldb import MySQL
 from flask import Blueprint, jsonify, current_app
-import json
+from flask import request
 
+from decorator import *
 
 teacher_routes = Blueprint('teacher_routes', __name__)
+
 
 def get_mysql():
     return current_app.config['mysql']
@@ -21,7 +20,7 @@ def get_teacher_classes():
         teacher_id = get_id(token)
         if not teacher_id:
             return jsonify({"error": "Missing teacher_id parameter"}), 400
-        
+
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         query = """
@@ -52,7 +51,8 @@ def get_teacher_classes():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-#function to create a class and store it in db
+
+# function to create a class and store it in db
 
 @teacher_routes.route('/create_class', methods=['POST'])
 def create_class():
@@ -78,7 +78,7 @@ def create_class():
         return jsonify({"error": str(e)}), 500
 
 
-#function to add students to a class and update db
+# function to add students to a class and update db
 @teacher_routes.route('/update_students_class', methods=['POST'])
 def update_students_class():
     try:
@@ -117,20 +117,20 @@ def update_students_class():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-#endpoint to display feedback for each class quiz
+
+# endpoint to display feedback for each class quiz
 @teacher_routes.route('/class_feedback', methods=['GET'])
 def get_class_feedback():
-
     try:
         class_id = request.args.get('class_id')
         quiz_id = request.args.get('quiz_id')
-        
+
         if not class_id or not quiz_id:
             return jsonify({"error": "Missing class_id or quiz_id parameter"}), 400
 
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        
+
         query = """
         SELECT 
             s.student_name,
@@ -146,7 +146,7 @@ def get_class_feedback():
         WHERE 
             sq.quiz_id = %s AND c.class_id = %s;
         """
-        
+
         cursor.execute(query, (quiz_id, class_id))
         result = cursor.fetchall()
         cursor.close()
@@ -155,12 +155,12 @@ def get_class_feedback():
             return jsonify(result), 200
         else:
             return jsonify({"message": "No feedback found for the given class_id and quiz_id"}), 404
-    
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-#endpoint to display lessons 
+# endpoint to display lessons
 
 @teacher_routes.route('/teacher_lessons', methods=['POST'])
 def get_teacher_lessons():
@@ -168,7 +168,7 @@ def get_teacher_lessons():
         data = request.get_json()
         token = data['token']
         teacher_id = get_id(token)
-        #teacher_id = request.args.get('teacher_id')
+        # teacher_id = request.args.get('teacher_id')
         if not teacher_id:
             return jsonify({"error": "Missing teacher_id parameter"}), 400
 
@@ -189,7 +189,7 @@ def get_teacher_lessons():
         WHERE 
             l.teacher_id = %s
         """
-        
+
         cursor.execute(query, (teacher_id,))
         result = cursor.fetchall()
         cursor.close()
@@ -198,11 +198,12 @@ def get_teacher_lessons():
             return jsonify(result), 200
         else:
             return jsonify({"message": "No lessons found for the given teacher_id"}), 404
-    
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-#endpoint to display personal information of teachers
+
+# endpoint to display personal information of teachers
 @teacher_routes.route('/teacherInfo', methods=['POST'])
 def get_teacher_by_id():
     try:
@@ -244,7 +245,8 @@ def get_teacher_by_id():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-#function to Edit personal information of teachers
+
+# function to Edit personal information of teachers
 
 @teacher_routes.route('/update_teacher_profile', methods=['POST'])
 def update_teacher_profile():
@@ -253,7 +255,7 @@ def update_teacher_profile():
         data = request.get_json()
         token = data['token']
         teacher_id = get_id(token)
-        #teacher_id = data.get('teacher_id')
+        # teacher_id = data.get('teacher_id')
 
         # Optional fields that can be updated
         teacher_name = data.get('teacher_name')
@@ -416,7 +418,7 @@ def add_additional_feedback():
         return jsonify({"error": str(e)}), 500
 
 
-#Route to assign a quiz to a specific class
+# Route to assign a quiz to a specific class
 @teacher_routes.route('/assign_quiz', methods=['POST'])
 def assign_quiz_to_class():
     try:
@@ -445,10 +447,79 @@ def assign_quiz_to_class():
                 INSERT INTO student_quizzes (student_id, quiz_id)
                 VALUES (%s, %s)
             """, (student['student_id'], quiz_id))
-        
+
         mysql.connection.commit()
         cursor.close()
 
         return jsonify({"message": "Quiz assigned to class and records created for each student successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@teacher_routes.route('/class_view', methods=['POST'])
+def class_view():
+    try:
+        data = request.get_json()
+        token = data['token']
+        class_id = data.get('class_id')
+
+        teacher_id = get_id(token)
+
+        if not teacher_id or not class_id:
+            return jsonify({"error": "Missing teacher_id or class_id"}), 400
+
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # Fetch class details
+        class_query = """
+        SELECT c.class_id, c.class_name, c.class_grade, t.teacher_name
+        FROM classes c
+        JOIN teachers t ON c.teacher_id = t.teacher_id
+        WHERE c.class_id = %s AND c.teacher_id = %s
+        """
+        cursor.execute(class_query, (class_id, teacher_id))
+        class_details = cursor.fetchone()
+
+        if not class_details:
+            return jsonify({"error": "Class not found or you don't have permission to view it"}), 404
+
+        # Fetch students in the class with their email and average mark
+        students_query = """
+        SELECT 
+            s.student_id, 
+            s.student_name, 
+            u.email,
+            AVG(sq.score) AS average_mark
+        FROM 
+            students s
+        JOIN 
+            users u ON s.user_id = u.user_id
+        LEFT JOIN 
+            student_quizzes sq ON s.student_id = sq.student_id
+        WHERE 
+            s.class_id = %s
+        GROUP BY 
+            s.student_id, s.student_name, u.email
+        """
+        cursor.execute(students_query, (class_id,))
+        students = cursor.fetchall()
+
+        # Process the results to handle cases where a student hasn't taken any quizzes
+        for student in students:
+            if student['average_mark'] is None:
+                student['average_mark'] = 'No quizzes taken'
+            else:
+                student['average_mark'] = float(student['average_mark'])
+
+        cursor.close()
+
+        response_data = {
+            "class": class_details,
+            "students": students
+        }
+
+        return jsonify(response_data), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
