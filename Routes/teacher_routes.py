@@ -523,3 +523,42 @@ def class_view():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@teacher_routes.route('/addStudent', methods=['POST'])
+def add_student_to_class():
+    try:
+        # Retrieve JSON data from the request
+        data = request.get_json()
+        student_email = data.get('student_email')
+        new_class_id = data.get('new_class_id')
+
+        # Validate that required fields are present
+        if not student_email or not new_class_id:
+            return jsonify({"error": "Missing student_email or new_class_id"}), 400
+
+        # Get MySQL connection
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor()
+
+        # Find the user ID based on the email
+        cursor.execute("SELECT user_id FROM users WHERE email = %s", (student_email,))
+        result = cursor.fetchone()
+
+        if not result:
+            cursor.close()
+            return jsonify({"error": "Student with the provided email not found"}), 404
+
+        user_id = result[0]
+
+        # Update the class ID for the student
+        query = "UPDATE students SET class_id = %s WHERE user_id = %s"
+        cursor.execute(query, (new_class_id, user_id))
+
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({"message": "Student's class updated successfully"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
