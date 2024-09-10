@@ -12,15 +12,13 @@ def get_mysql():
     return current_app.config['mysql']
 
 
-#endpoint to display the classes the teacher teaches
-
+# endpoint to display the classes the teacher teaches
 @teacher_routes.route('/teacher_classes', methods=['POST'])
 def get_teacher_classes():
     try:
         data = request.get_json()
         token = data['token']
         teacher_id = get_id(token)
-        #teacher_id = request.args.get('teacher_id')
         if not teacher_id:
             return jsonify({"error": "Missing teacher_id parameter"}), 400
         
