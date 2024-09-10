@@ -59,17 +59,17 @@ def create_class():
     try:
         data = request.get_json()
         class_name = data.get('class_name')
+        class_grade = data.get('class_grade')
         token = data['token']
         teacher_id = get_id(token)
-        #teacher_id = data.get('teacher_id')
 
         if not class_name or not teacher_id:
             return jsonify({"error": "Missing class_name or teacher_id"}), 400
 
         mysql = get_mysql()
         cursor = mysql.connection.cursor()
-        query = "INSERT INTO classes (class_name, teacher_id) VALUES (%s, %s)"
-        cursor.execute(query, (class_name, teacher_id))
+        query = "INSERT INTO classes (class_name, teacher_id, class_grade) VALUES (%s, %s, %s)"
+        cursor.execute(query, (class_name, teacher_id, class_grade))
         mysql.connection.commit()
         cursor.close()
 
