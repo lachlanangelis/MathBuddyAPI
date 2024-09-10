@@ -9,32 +9,36 @@ quiz_routes = Blueprint('quiz_routes', __name__)
 def get_mysql():
     return current_app.config['mysql']
 
+
 @quiz_routes.route('/create_quiz', methods=['POST'])
 def create_quiz():
     try:
         if request.method == 'POST':
             # Retrieve the JSON data from the request
             data = request.get_json()
-            quiz_id = data.get('quiz_id')
             topic = data.get('topic')
             number_of_questions = data.get('number_of_questions')
-            difficulty = data.get('difficulty')
+            class_id = data.get('class_id')  # Assume this is sent in the request body
 
-            if quiz_id and topic and number_of_questions and difficulty:
+            if topic and number_of_questions and class_id:
                 # Generate the quiz
-                questions = generate_quiz_questions(quiz_id, topic, number_of_questions, difficulty)
+                difficulty = "medium"  # Define the difficulty level as needed
+                questions = generate_quiz_questions(topic, number_of_questions, difficulty)
 
                 mysql = get_mysql()
                 cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
                 # Insert the quiz details into the quizzes table
                 cursor.execute("""
-                    INSERT INTO quizzes (quiz_id, title, description, due_date)
+                    INSERT INTO quizzes (title, description, class_id, due_date)
                     VALUES (%s, %s, %s, NOW() + INTERVAL 7 DAY)
-                """, (quiz_id, f"Quiz on {topic}", f"A quiz on {topic} at {difficulty} difficulty level"))
+                """, (f"Quiz on {topic}", f"A quiz on {topic} at {difficulty} difficulty level", class_id))
+
+                # Get the last inserted quiz ID
+                quiz_id = cursor.lastrowid
                 mysql.connection.commit()
 
-                # Insert each question into the quiz_questions table with auto-increment for question_id
+                # Insert each question into the quiz_questions table with the generated quiz_id
                 for question in questions:
                     cursor.execute("""
                         INSERT INTO quiz_questions (quiz_id, question_text, correct_answer)
@@ -44,7 +48,7 @@ def create_quiz():
 
                 cursor.close()
 
-                # Return the generated quiz as JSON
+                # Return the generated quiz ID and questions as JSON
                 return jsonify({"quiz_id": quiz_id, "questions": questions}), 200
             else:
                 # Return an error if any parameter is missing
@@ -54,8 +58,7 @@ def create_quiz():
         return jsonify({"error": str(e)}), 500
 
 
-# noinspection PyUnusedLocal
-def generate_quiz_questions(quiz_id, topic, number_of_questions, difficulty):
+def generate_quiz_questions(topic, number_of_questions, difficulty):
     questions = []
     for i in range(number_of_questions):
         # Create a query for generating each question based on the topic and difficulty
