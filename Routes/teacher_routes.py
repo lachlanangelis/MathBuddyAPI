@@ -1,6 +1,4 @@
 import MySQLdb.cursors
-from flask import Blueprint, jsonify, current_app
-from flask import request
 
 from decorator import *
 
@@ -559,6 +557,64 @@ def add_student_to_class():
         cursor.close()
 
         return jsonify({"message": "Student's class updated successfully"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@teacher_routes.route('/getTeachQuiz', methods=['POST'])
+def getTeachQuiz():
+    try:
+        # Retrieve token and get teacher_id
+        data = request.get_json()
+        token = data['token']
+        teacher_id = get_id(token)
+
+        if not teacher_id:
+            return jsonify({"error": "Missing teacher_id parameter"}), 400
+
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # Query to get all the class IDs and names taught by the teacher
+        class_query = """
+        SELECT class_id, class_name
+        FROM classes
+        WHERE teacher_id = %s
+        """
+        cursor.execute(class_query, (teacher_id,))
+        classes = cursor.fetchall()
+
+        if not classes:
+            return jsonify({"message": "No classes found for this teacher."}), 404
+
+        # Initialize a dictionary to hold quizzes grouped by class
+        quizzes_by_class = {}
+
+        # Iterate through each class to get the quizzes
+        for class_item in classes:
+            class_id = class_item['class_id']
+            class_name = class_item['class_name']
+
+            # Query to get all quizzes assigned to the current class
+            quiz_query = """
+            SELECT q.quiz_id, q.title
+            FROM quizzes q
+            WHERE q.class_id = %s
+            """
+            cursor.execute(quiz_query, (class_id,))
+            quizzes = cursor.fetchall()
+
+            # Store the quizzes under the respective class in the dictionary
+            quizzes_by_class[class_name] = quizzes
+
+        cursor.close()
+
+        # If no quizzes are found for any class
+        if not any(quizzes_by_class.values()):
+            return jsonify({"message": "No quizzes found for the given teacher's classes."}), 404
+
+        return jsonify(quizzes_by_class), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
