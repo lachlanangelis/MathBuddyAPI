@@ -598,7 +598,7 @@ def getTeachQuiz():
 
             # Query to get all quizzes assigned to the current class
             quiz_query = """
-            SELECT q.quiz_id, q.title
+            SELECT q.quiz_id, q.title, q.active
             FROM quizzes q
             WHERE q.class_id = %s
             """
