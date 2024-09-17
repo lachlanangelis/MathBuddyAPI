@@ -347,8 +347,8 @@ def quiz_completion_details():
             if quiz_details:
                 # Fetch feedback for the quiz
                 cursor.execute("""
-                    SELECT feedback_text_ai
-                    FROM feedback
+                    SELECT feedback
+                    FROM student_quizzes
                     WHERE student_id = %s AND quiz_id = %s
                 """, (student_id, quiz_id))
                 feedback = cursor.fetchone()
@@ -358,7 +358,7 @@ def quiz_completion_details():
                     "student_name": student_name,
                     "completed_at": quiz_details['completed_at'],
                     "score": quiz_details['score'],
-                    "feedback": feedback['feedback_text_ai'] if feedback else None
+                    "feedback": feedback['feedback'] if feedback else None
                 })
             else:
                 # If no quiz details found for the student
