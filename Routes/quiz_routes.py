@@ -234,14 +234,27 @@ def assign_quiz():
     try:
         # Retrieve the JSON data from the request
         data = request.get_json()
-        class_id = data.get('class_id')
+        class_name = data.get('class_name')
         quiz_id = data.get('quiz_id')
 
-        if not class_id or not quiz_id:
+        if not class_name or not quiz_id:
             return jsonify({"error": "Missing required parameters"}), 400
 
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # Fetch the class ID from the class name
+        cursor.execute("""
+            SELECT class_id
+            FROM classes
+            WHERE class_name = %s
+        """, (class_name,))
+        class_data = cursor.fetchone()
+
+        if not class_data:
+            return jsonify({"error": "Class not found"}), 404
+
+        class_id = class_data['class_id']
 
         # Fetch all student IDs from the class
         cursor.execute("""
@@ -277,3 +290,4 @@ def assign_quiz():
     except Exception as e:
         print(f"Error occurred: {e}")
         return jsonify({"error": str(e)}), 500
+
