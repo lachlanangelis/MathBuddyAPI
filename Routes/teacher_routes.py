@@ -368,12 +368,11 @@ def add_additional_feedback():
         # Retrieve JSON data from the request
         data = request.get_json()
         student_id = data.get('student_id')
-        teacher_id = data.get('teacher_id')
         quiz_id = data.get('quiz_id')
         additional_feedback_teacher = data.get('additional_feedback_teacher')
 
         # Validate that required fields are present
-        if not student_id or not teacher_id or not quiz_id or not additional_feedback_teacher:
+        if not student_id or not quiz_id or additional_feedback_teacher is None:
             return jsonify({"error": "Missing required parameters"}), 400
 
         # Get MySQL connection
@@ -383,8 +382,8 @@ def add_additional_feedback():
         # Update or insert the feedback in the feedback table
         cursor.execute("""
             SELECT feedback_id FROM feedback
-            WHERE student_id = %s AND teacher_id = %s AND quiz_id = %s
-        """, (student_id, teacher_id, quiz_id))
+            WHERE student_id = %s AND quiz_id = %s
+        """, (student_id, quiz_id))
         feedback = cursor.fetchone()
 
         if feedback:
@@ -396,25 +395,26 @@ def add_additional_feedback():
             cursor.execute(update_feedback_query, (additional_feedback_teacher, feedback['feedback_id']))
         else:
             insert_feedback_query = """
-            INSERT INTO feedback (student_id, teacher_id, quiz_id, additional_feedback_teacher)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO feedback (student_id, quiz_id, additional_feedback_teacher)
+            VALUES (%s, %s, %s)
             """
-            cursor.execute(insert_feedback_query, (student_id, teacher_id, quiz_id, additional_feedback_teacher))
+            cursor.execute(insert_feedback_query, (student_id, quiz_id, additional_feedback_teacher))
 
         # Update the additional feedback in the student_quizzes table
         cursor.execute("""
             UPDATE student_quizzes
-            SET additional_feedback_teacher = %s
+            SET feedback = %s
             WHERE student_id = %s AND quiz_id = %s
         """, (additional_feedback_teacher, student_id, quiz_id))
 
         mysql.connection.commit()
         cursor.close()
 
-        return jsonify({"message": "Additional feedback updated successfully in both tables"}), 200
+        return jsonify({"message": "Additional feedback updated"}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 
 # Route to assign a quiz to a specific class
