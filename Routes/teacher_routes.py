@@ -561,7 +561,6 @@ def add_student_to_class():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @teacher_routes.route('/getTeachQuiz', methods=['POST'])
 def getTeachQuiz():
     try:
@@ -588,7 +587,7 @@ def getTeachQuiz():
         if not classes:
             return jsonify({"message": "No classes found for this teacher."}), 404
 
-        # Initialize a dictionary to hold quizzes grouped by class
+        # Initialize a dictionary to hold quizzes grouped by class with completion info
         quizzes_by_class = {}
 
         # Iterate through each class to get the quizzes
@@ -605,8 +604,41 @@ def getTeachQuiz():
             cursor.execute(quiz_query, (class_id,))
             quizzes = cursor.fetchall()
 
-            # Store the quizzes under the respective class in the dictionary
-            quizzes_by_class[class_name] = quizzes
+            quizzes_with_completion = []
+
+            for quiz in quizzes:
+                quiz_id = quiz['quiz_id']
+                quiz_title = quiz['title']
+                quiz_active = quiz['active']
+
+                # Fetch the total number of students assigned the quiz
+                cursor.execute("""
+                    SELECT COUNT(*) AS total_students
+                    FROM student_quizzes
+                    WHERE quiz_id = %s
+                """, (quiz_id,))
+                total_students = cursor.fetchone()['total_students']
+
+                # Fetch the number of students who have completed the quiz
+                cursor.execute("""
+                    SELECT COUNT(*) AS completed_students
+                    FROM student_quizzes
+                    WHERE quiz_id = %s AND completed = 1
+                """, (quiz_id,))
+                completed_students = cursor.fetchone()['completed_students']
+
+                # Calculate the completion percentage
+                completion_percentage = (completed_students / total_students * 100) if total_students > 0 else 0
+
+                quizzes_with_completion.append({
+                    "quiz_id": quiz_id,
+                    "title": quiz_title,
+                    "active": quiz_active,
+                    "completion_percentage": completion_percentage
+                })
+
+            # Store the quizzes with completion info under the respective class in the dictionary
+            quizzes_by_class[class_name] = quizzes_with_completion
 
         cursor.close()
 

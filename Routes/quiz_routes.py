@@ -1,10 +1,12 @@
 import concurrent.futures
+
 import MySQLdb.cursors
-from flask import current_app
-from decorator import *
+
 from Routes.ollama_routes import *
+from decorator import *
 
 quiz_routes = Blueprint('quiz_routes', __name__)
+
 
 def get_mysql():
     return current_app.config['mysql']
@@ -146,8 +148,6 @@ def generate_feedback(student_id, quiz_id, student_name, grade):
             return jsonify({"error": str(e)})
 
 
-
-
 @quiz_routes.route('/submit_quiz', methods=['POST'])
 def submit_quiz():
     try:
@@ -223,6 +223,56 @@ def submit_quiz():
             executor.submit(generate_feedback, student_id, quiz_id, student_name, grade)
 
         return response, 200
+
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@quiz_routes.route('/assign_quiz', methods=['POST'])
+def assign_quiz():
+    try:
+        # Retrieve the JSON data from the request
+        data = request.get_json()
+        class_id = data.get('class_id')
+        quiz_id = data.get('quiz_id')
+
+        if not class_id or not quiz_id:
+            return jsonify({"error": "Missing required parameters"}), 400
+
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # Fetch all student IDs from the class
+        cursor.execute("""
+            SELECT student_id
+            FROM students
+            WHERE class_id = %s
+        """, (class_id,))
+        students = cursor.fetchall()
+
+        if not students:
+            return jsonify({"error": "No students found in the specified class"}), 404
+
+        # Insert each student into the student_quizzes table
+        for student in students:
+            student_id = student['student_id']
+            cursor.execute("""
+                INSERT INTO student_quizzes (student_id, quiz_id, score, completed, completed_at)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (student_id, quiz_id, None, 0, None))
+
+        # Update the quiz status to 'Active'
+        cursor.execute("""
+            UPDATE quizzes
+            SET active = 'Active'
+            WHERE quiz_id = %s
+        """, (quiz_id,))
+
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({"message": "Quiz assigned to all students successfully"}), 200
 
     except Exception as e:
         print(f"Error occurred: {e}")
