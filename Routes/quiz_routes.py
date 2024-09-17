@@ -291,3 +291,88 @@ def assign_quiz():
         print(f"Error occurred: {e}")
         return jsonify({"error": str(e)}), 500
 
+
+@quiz_routes.route('/quiz_completion_details', methods=['POST'])
+def quiz_completion_details():
+    try:
+        # Retrieve the JSON data from the request
+        data = request.get_json()
+        class_name = data.get('class_name')
+        quiz_id = data.get('quiz_id')
+
+        if not class_name or not quiz_id:
+            return jsonify({"error": "Missing required parameters"}), 400
+
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # Fetch the class ID from the class name
+        cursor.execute("""
+            SELECT class_id
+            FROM classes
+            WHERE class_name = %s
+        """, (class_name,))
+        class_data = cursor.fetchone()
+
+        if not class_data:
+            return jsonify({"error": "Class not found"}), 404
+
+        class_id = class_data['class_id']
+
+        # Fetch all students in the class
+        cursor.execute("""
+            SELECT student_id, student_name
+            FROM students
+            WHERE class_id = %s
+        """, (class_id,))
+        students = cursor.fetchall()
+
+        if not students:
+            return jsonify({"error": "No students found in the specified class"}), 404
+
+        # Fetch quiz details for each student
+        result = []
+        for student in students:
+            student_id = student['student_id']
+            student_name = student['student_name']
+
+            # Fetch quiz completion details
+            cursor.execute("""
+                SELECT score, completed_at
+                FROM student_quizzes
+                WHERE student_id = %s AND quiz_id = %s
+            """, (student_id, quiz_id))
+            quiz_details = cursor.fetchone()
+
+            if quiz_details:
+                # Fetch feedback for the quiz
+                cursor.execute("""
+                    SELECT feedback_text_ai
+                    FROM feedback
+                    WHERE student_id = %s AND quiz_id = %s
+                """, (student_id, quiz_id))
+                feedback = cursor.fetchone()
+
+                result.append({
+                    "student_id": student_id,
+                    "student_name": student_name,
+                    "completed_at": quiz_details['completed_at'],
+                    "score": quiz_details['score'],
+                    "feedback": feedback['feedback_text_ai'] if feedback else None
+                })
+            else:
+                # If no quiz details found for the student
+                result.append({
+                    "student_id": student_id,
+                    "student_name": student_name,
+                    "completed_at": None,
+                    "score": None,
+                    "feedback": None
+                })
+
+        cursor.close()
+        return jsonify(result), 200
+
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        return jsonify({"error": str(e)}), 500
