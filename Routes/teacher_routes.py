@@ -216,6 +216,7 @@ def get_teacher_by_id():
             t.teacher_name,
             t.user_id,
             u.date_of_birth,
+            u.email,
             u.gender,
             u.full_name,
             u.preferred_first_name,
