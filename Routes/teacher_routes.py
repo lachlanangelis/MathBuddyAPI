@@ -639,6 +639,11 @@ def getTeachQuiz():
                         WHERE quiz_id = %s AND completed = 1
                     """, (quiz_id,))
                     average_score = cursor.fetchone()['average_score']
+
+                    # Debugging line to check the fetched average_score
+                    print(f"Quiz ID: {quiz_id}, Average Score: {average_score}")
+
+                    # Handle None and ensure proper numeric type
                     average_score = average_score if average_score is not None else 0
 
                 quizzes_with_details.append({
