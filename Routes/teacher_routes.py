@@ -561,6 +561,7 @@ def add_student_to_class():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @teacher_routes.route('/getTeachQuiz', methods=['POST'])
 def getTeachQuiz():
     try:
@@ -652,6 +653,91 @@ def getTeachQuiz():
                     "active": quiz_active,
                     "completion_percentage": completion_percentage,
                     "average_score": average_score
+                })
+
+            # Store the quizzes with completion info under the respective class in the dictionary
+            quizzes_by_class[class_name] = quizzes_with_details
+
+        cursor.close()
+
+        # If no quizzes are found for any class
+        if not any(quizzes_by_class.values()):
+            return jsonify({"message": "No quizzes found for the given teacher's classes."}), 404
+
+        return jsonify(quizzes_by_class), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@teacher_routes.route('/teacherFeedback', methods=['POST'])
+def teacher_feedback():
+    try:
+        # Retrieve token and get teacher_id
+        data = request.get_json()
+        token = data['token']
+        teacher_id = get_id(token)
+
+        if not teacher_id:
+            return jsonify({"error": "Invalid token or teacher_id not found."}), 400
+
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # Query to get all the class IDs and names taught by the teacher
+        class_query = """
+        SELECT class_id, class_name
+        FROM classes
+        WHERE teacher_id = %s
+        """
+        cursor.execute(class_query, (teacher_id,))
+        classes = cursor.fetchall()
+
+        if not classes:
+            return jsonify({"message": "No classes found for this teacher."}), 404
+
+        # Initialize a dictionary to hold quizzes grouped by class with completion info
+        quizzes_by_class = {}
+
+        # Iterate through each class to get the quizzes
+        for class_item in classes:
+            class_id = class_item['class_id']
+            class_name = class_item['class_name']
+
+            # Query to get all quizzes assigned to the current class with active status 'Complete'
+            quiz_query = """
+            SELECT q.quiz_id, q.title, q.due_date
+            FROM quizzes q
+            WHERE q.class_id = %s AND q.active = 'Complete'
+            """
+            cursor.execute(quiz_query, (class_id,))
+            quizzes = cursor.fetchall()
+
+            quizzes_with_details = []
+
+            for quiz in quizzes:
+                quiz_id = quiz['quiz_id']
+                quiz_title = quiz['title']
+                due_date = quiz['due_date']
+
+                # Fetch the average score for the quiz
+                cursor.execute("""
+                    SELECT AVG(sq.score) AS average_score
+                    FROM student_quizzes sq
+                    WHERE sq.quiz_id = %s AND sq.completed = 1
+                """, (quiz_id,))
+                quiz_details = cursor.fetchone()
+
+                average_score = quiz_details['average_score']
+
+                # Handle None and ensure proper numeric type
+                average_score = average_score if average_score is not None else 0
+
+                quizzes_with_details.append({
+                    "quiz_id": quiz_id,
+                    "title": quiz_title,
+                    "average_score": average_score,
+                    "due_date": due_date
                 })
 
             # Store the quizzes with completion info under the respective class in the dictionary
