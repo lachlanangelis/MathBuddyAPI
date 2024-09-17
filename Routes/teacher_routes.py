@@ -604,7 +604,7 @@ def getTeachQuiz():
             cursor.execute(quiz_query, (class_id,))
             quizzes = cursor.fetchall()
 
-            quizzes_with_completion = []
+            quizzes_with_details = []
 
             for quiz in quizzes:
                 quiz_id = quiz['quiz_id']
@@ -630,15 +630,27 @@ def getTeachQuiz():
                 # Calculate the completion percentage
                 completion_percentage = (completed_students / total_students * 100) if total_students > 0 else 0
 
-                quizzes_with_completion.append({
+                # If the quiz is completed, calculate the average score
+                average_score = None
+                if quiz_active == "Complete":
+                    cursor.execute("""
+                        SELECT AVG(score) AS average_score
+                        FROM student_quizzes
+                        WHERE quiz_id = %s AND completed = 1
+                    """, (quiz_id,))
+                    average_score = cursor.fetchone()['average_score']
+                    average_score = average_score if average_score is not None else 0
+
+                quizzes_with_details.append({
                     "quiz_id": quiz_id,
                     "title": quiz_title,
                     "active": quiz_active,
-                    "completion_percentage": completion_percentage
+                    "completion_percentage": completion_percentage,
+                    "average_score": average_score
                 })
 
             # Store the quizzes with completion info under the respective class in the dictionary
-            quizzes_by_class[class_name] = quizzes_with_completion
+            quizzes_by_class[class_name] = quizzes_with_details
 
         cursor.close()
 

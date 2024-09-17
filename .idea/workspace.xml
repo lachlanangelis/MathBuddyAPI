@@ -4,11 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a2d82f30-343e-4019-839f-008e13206ccd" name="Changes" comment="Initial Commit">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Routes/quiz_routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/Routes/quiz_routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Routes/teacher_routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/Routes/teacher_routes.py" afterDir="false" />
-    </list>
+    <list default="true" id="a2d82f30-343e-4019-839f-008e13206ccd" name="Changes" comment="Initial Commit" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -194,7 +190,7 @@
       <workItem from="1725928265059" duration="5561000" />
       <workItem from="1725940025645" duration="2277000" />
       <workItem from="1726223266651" duration="1700000" />
-      <workItem from="1726536751357" duration="1787000" />
+      <workItem from="1726536751357" duration="1957000" />
     </task>
     <task id="LOCAL-00001" summary="Initial Commit">
       <option name="closed" value="true" />
