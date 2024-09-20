@@ -23,7 +23,7 @@ def get_child_info():
         if not token:
             return jsonify({"error": "Missing token"}), 400
 
-        parent_id = get_parent_id_from_token(token)
+        parent_id = get_id(token)
 
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -67,7 +67,7 @@ def get_pending_tasks():
         if not token:
             return jsonify({"error": "Missing token"}), 400
 
-        parent_id = get_parent_id_from_token(token)
+        parent_id = get_id(token)
 
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -114,7 +114,7 @@ def get_child_quiz_scores():
         if not token:
             return jsonify({"error": "Missing token"}), 400
 
-        parent_id = get_parent_id_from_token(token)
+        parent_id = get_id(token)
 
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -157,7 +157,7 @@ def get_completed_quizzes():
         if not token:
             return jsonify({"error": "Missing token"}), 400
 
-        parent_id = get_parent_id_from_token(token)
+        parent_id = get_id(token)
 
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -202,7 +202,7 @@ def get_child_quiz_feedback():
         if not token or not quiz_id:
             return jsonify({"error": "Missing token or quiz_id parameter"}), 400
 
-        parent_id = get_parent_id_from_token(token)
+        parent_id = get_id(token)
 
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -302,7 +302,7 @@ def update_parent_info():
         if not token:
             return jsonify({"error": "Missing token"}), 400
 
-        parent_id = get_parent_id_from_token(token)
+        parent_id = get_id(token)
 
         # Optional fields that can be updated
         parent_name = data.get('parent_name')
