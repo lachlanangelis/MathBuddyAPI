@@ -1,6 +1,7 @@
 import MySQLdb.cursors
 from flask import Blueprint, jsonify, current_app, request
 from flask_jwt_extended import jwt_required, decode_token
+from decorator import *
 
 parent_routes = Blueprint('parent_routes', __name__)
 
@@ -249,7 +250,8 @@ def get_parent_info():
         if not token:
             return jsonify({"error": "Missing token"}), 400
 
-        parent_id = get_parent_id_from_token(token)
+        parent_id = get_id(token)
+        print(parent_id)
 
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
