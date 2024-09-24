@@ -479,16 +479,21 @@ def parent_quiz_complete():
 
         # Validate that the parent has access to the specified student
         cursor.execute("""
-            SELECT child_id
+            SELECT child_id AS student_id
             FROM parents
             WHERE parent_id = %s AND child_id = %s
         """, (parent_id, student_id_param))
+        
+        # Check if the result is found
         student = cursor.fetchone()
-
+        
         if not student:
             return jsonify({"error": "Parent does not have access to this student's data"}), 403
+        
+        student_id = student.get('student_id')  # Make sure 'student_id' exists
 
-        student_id = student['student_id']
+        if not student_id:
+            return jsonify({"error": "Student ID not found in database"}), 404
 
         # Get the quiz name
         cursor.execute("""
