@@ -670,6 +670,54 @@ def getTeachQuiz():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@teacher_routes.route('/getQuizDetails', methods=['POST'])
+def getQuizDetails():
+    try:
+        # Retrieve token and get teacher_id
+        data = request.get_json()
+        token = data['token']
+        quiz_id = data['quiz_id']  # Get the quiz_id from the request
+        teacher_id = get_id(token)
+
+        if not teacher_id or not quiz_id:
+            return jsonify({"error": "Missing teacher_id or quiz_id parameter"}), 400
+
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # Query to get the students assigned to the quiz along with their scores and completion status
+        student_quiz_query = """
+        SELECT s.student_id, s.student_name, sq.score, sq.completed
+        FROM students s
+        JOIN student_quizzes sq ON s.student_id = sq.student_id
+        WHERE sq.quiz_id = %s
+        """
+        cursor.execute(student_quiz_query, (quiz_id,))
+        student_details = cursor.fetchall()
+
+        # Query to get all questions for the specific quiz
+        quiz_questions_query = """
+        SELECT question_id, question_text
+        FROM quiz_questions
+        WHERE quiz_id = %s
+        """
+        cursor.execute(quiz_questions_query, (quiz_id,))
+        quiz_questions = cursor.fetchall()
+
+        cursor.close()
+
+        # If no students are found for the quiz
+        if not student_details:
+            return jsonify({"message": "No students found for the specified quiz."}), 404
+
+        return jsonify({
+            "students": student_details,
+            "quiz_questions": quiz_questions
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 @teacher_routes.route('/teacherFeedback', methods=['POST'])
 def teacher_feedback():
