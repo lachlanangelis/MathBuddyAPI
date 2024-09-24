@@ -164,6 +164,7 @@ def get_completed_quizzes():
 
         query = """
         SELECT 
+            q.quiz_id AS quiz_id,
             q.title AS quiz_title,
             s.student_name AS child_name
         FROM 
