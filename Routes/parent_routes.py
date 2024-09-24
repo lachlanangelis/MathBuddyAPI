@@ -30,6 +30,7 @@ def get_child_info():
         
         query = '''
         SELECT 
+            s.student_id,
             s.student_name,
             c.class_name,
             u.school_name
