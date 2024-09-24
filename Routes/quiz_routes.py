@@ -479,7 +479,7 @@ def parent_quiz_complete():
 
         # Validate that the parent has access to the specified student
         cursor.execute("""
-            SELECT student_id
+            SELECT child_id
             FROM parents
             WHERE parent_id = %s AND child_id = %s
         """, (parent_id, student_id_param))
