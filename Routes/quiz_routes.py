@@ -1,9 +1,8 @@
 import concurrent.futures
-
 import MySQLdb.cursors
-
 from Routes.ollama_routes import *
 from decorator import *
+from Routes.Lresources import search_articlesFunc, search_videosFunc
 
 quiz_routes = Blueprint('quiz_routes', __name__)
 
@@ -372,6 +371,87 @@ def quiz_completion_details():
 
         cursor.close()
         return jsonify(result), 200
+
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@quiz_routes.route('/student_quiz_complete', methods=['POST'])
+def student_quiz_complete():
+    try:
+        # Retrieve the JSON data from the request
+        data = request.get_json()
+        token = data.get('token')
+        quiz_id = data.get('quiz_id')
+
+        if not token or not quiz_id:
+            return jsonify({"error": "Missing required parameters"}), 400
+
+        # Get the student ID from the token
+        student_id = get_id(token)
+        if not student_id:
+            return jsonify({"error": "Invalid token"}), 400
+
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # Get the quiz name
+        cursor.execute("""
+            SELECT title
+            FROM quizzes
+            WHERE quiz_id = %s
+        """, (quiz_id,))
+        quiz = cursor.fetchone()
+        if not quiz:
+            return jsonify({"error": "Quiz not found"}), 404
+
+        quiz_name = quiz['title']
+
+        # Extract the topic from the quiz title
+        topic = quiz_name.split('Quiz on ')[1] if 'Quiz on ' in quiz_name else quiz_name
+
+        # Get the student's quiz details (score, completion time)
+        cursor.execute("""
+            SELECT score, completed_at
+            FROM student_quizzes
+            WHERE student_id = %s AND quiz_id = %s
+        """, (student_id, quiz_id))
+        student_quiz = cursor.fetchone()
+        if not student_quiz:
+            return jsonify({"error": "No quiz submission found for this student"}), 404
+
+        student_score = student_quiz['score']
+        completed_at = student_quiz['completed_at']
+
+        # Get the feedback from the database
+        cursor.execute("""
+            SELECT feedback_text_ai
+            FROM feedback
+            WHERE student_id = %s AND quiz_id = %s
+        """, (student_id, quiz_id))
+        feedback_data = cursor.fetchone()
+        feedback = feedback_data['feedback_text_ai'] if feedback_data else None
+
+        # Search for a related video based on the extracted topic
+        video_result = search_videosFunc(topic)
+        video_url = video_result.get('video_url') if 'video_url' in video_result else None
+
+        # Search for related articles based on the extracted topic
+        article_result = search_articlesFunc([topic])  # Pass as list if necessary
+        articles = article_result.get('articles') if 'articles' in article_result else []
+
+        cursor.close()
+
+        # Return the required details along with video and articles
+        return jsonify({
+            "quiz_name": quiz_name,
+            "student_score": student_score,
+            "completed_at": completed_at,
+            "feedback": feedback,
+            "related_video": video_url,
+            "related_articles": articles
+        }), 200
 
     except Exception as e:
         print(f"Error occurred: {e}")

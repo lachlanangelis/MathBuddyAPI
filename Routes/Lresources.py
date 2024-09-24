@@ -3,6 +3,7 @@ from googlesearch import search
 from youtubesearchpython import VideosSearch
 
 Lresources = Blueprint('Lresources', __name__)
+
 @Lresources.route('/search_videos', methods=['POST'])
 def search_videos():
     try:
@@ -29,7 +30,7 @@ def search_videos():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
 @Lresources.route('/search_articles', methods=['POST'])
 def search_articles():
     try:
@@ -52,3 +53,46 @@ def search_articles():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+def search_videosFunc(weak_topics):
+    try:
+        if not weak_topics:
+            return {"error": "No weak topics provided"}
+
+        # Build search query from weak topics
+        search_query = 'Basics of ' + weak_topics
+
+        # Initialize YouTube search
+        videos_search = VideosSearch(search_query, limit=1)
+        results = videos_search.result()
+
+        if results['result']:
+            # Get the first video result
+            video = results['result'][0]
+            video_url = video['link']
+            return {"video_url": video_url}
+        else:
+            return {"message": "No videos found"}
+
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def search_articlesFunc(weak_topics):
+    try:
+        if not weak_topics:
+            return {"error": "No weak topics provided"}
+
+        # Build search query from weak topics
+        search_query = ' '.join(weak_topics) + ' learning resources'
+
+        # Perform Google search and convert to a list
+        search_results = list(search(search_query, num_results=3))  # Convert generator to list
+
+        if search_results:
+            return {"articles": search_results}
+        else:
+            return {"message": "No articles found"}
+
+    except Exception as e:
+        return {"error": str(e)}
