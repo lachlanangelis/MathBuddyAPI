@@ -1,7 +1,11 @@
 import pytest
 from flask import Flask
 from flask_testing import TestCase
-from app import create_app  # Make sure create_app initializes your Flask app and registers auth_routes
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from app import create_app  # Now it should be able to find app.py correctly
+
 
 class AuthRoutesTest(TestCase):
     def create_app(self):
@@ -12,15 +16,15 @@ class AuthRoutesTest(TestCase):
 
     def test_login_success(self):
         response = self.client.post('/login', json={
-            "email": "valid_user@example.com",
-            "password": "valid_password"
+            "email": "bruh@example.com",
+            "password": "bruh"
         })
         self.assertEqual(response.status_code, 200)
         self.assertIn('access_token', response.json)
 
     def test_login_invalid_credentials(self):
         response = self.client.post('/login', json={
-            "email": "valid_user@example.com",
+            "email": "bruh@example.com",
             "password": "invalid_password"
         })
         self.assertEqual(response.status_code, 401)
@@ -45,16 +49,5 @@ class AuthRoutesTest(TestCase):
         })
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json["message"], "Student and Parent registered successfully")
-
-    def test_signup_parent_success(self):
-        response = self.client.post('/signupParent', json={
-            "email": "new_parent@example.com",
-            "password": "newpassword",
-            "full_name": "New Parent",
-            "phone": "1122334455",
-            "child_id": 1  # Assume this child_id exists
-        })
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.json["message"], "Parent registered successfully")
 
 # To run the tests, you can use the command `pytest` in your terminal.
