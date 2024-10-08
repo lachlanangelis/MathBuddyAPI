@@ -6,7 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="a2d82f30-343e-4019-839f-008e13206ccd" name="Changes" comment="Initial Commit">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Routes/auth_routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/Routes/auth_routes.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Routes/quiz_routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/Routes/quiz_routes.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />

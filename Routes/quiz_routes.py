@@ -569,3 +569,55 @@ def parent_quiz_complete():
     except Exception as e:
         print(f"Error occurred: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+@quiz_routes.route('/get_quiz_details', methods=['POST'])
+def get_quiz_details():
+    try:
+        # Retrieve the JSON data from the request
+        data = request.get_json()
+        quiz_id = data.get('quiz_id')
+
+        # Check if quiz_id is provided
+        if not quiz_id:
+            return jsonify({"error": "Missing quiz_id parameter"}), 400
+
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # Fetch the quiz details (title, description, due_date, time_limit)
+        cursor.execute("""
+            SELECT q.quiz_id, q.title, q.description, q.due_date, q.time_limit
+            FROM quizzes q
+            WHERE q.quiz_id = %s
+        """, (quiz_id,))
+        quiz_details = cursor.fetchone()
+
+        if not quiz_details:
+            return jsonify({"error": "Quiz not found"}), 404
+
+        # Fetch the quiz questions and correct answers
+        cursor.execute("""
+            SELECT qq.question_id, qq.question_text, qq.correct_answer
+            FROM quiz_questions qq
+            WHERE qq.quiz_id = %s
+        """, (quiz_id,))
+        quiz_questions = cursor.fetchall()
+
+        cursor.close()
+
+        # Prepare the response JSON structure
+        response = {
+            "quiz_id": quiz_details['quiz_id'],
+            "title": quiz_details['title'],
+            "description": quiz_details['description'],
+            "due_date": quiz_details['due_date'],
+            "time_limit": quiz_details['time_limit'],
+            "questions": quiz_questions
+        }
+
+        return jsonify(response), 200
+
+    except Exception as e:
+        print(f"Error in get_quiz_details: {e}")
+        return jsonify({"error": str(e)}), 500
