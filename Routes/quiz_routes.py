@@ -180,28 +180,41 @@ def submit_quiz():
             question_id = question['question_id']
             correct_answer = question['correct_answer']
 
-            # Debugging output
-            print(f"Checking question ID {question_id}: correct answer is {correct_answer}")
-
             # Check if the student answered this question
             student_answer = student_answers.get(str(question_id))  # Ensure key is a string for dict access
-            print(f"Student's answer: {student_answer}")
 
             if student_answer is not None:
                 if str(student_answer).strip().lower() == str(correct_answer).strip().lower():
                     correct_count += 1
-            # If student_answer is None, the question was unanswered and gets no marks
 
         # Calculate grade as percentage
         grade = (correct_count / total_questions) * 100
 
-        # Store the grade and mark the quiz as completed
+        # Store the grade and mark the quiz as completed for this student
         cursor.execute("""
             UPDATE student_quizzes
             SET score = %s, completed = 1, completed_at = NOW()
             WHERE student_id = %s AND quiz_id = %s
         """, (grade, student_id, quiz_id))
         mysql.connection.commit()
+
+        # Check if all students assigned to the quiz have completed it
+        cursor.execute("""
+            SELECT COUNT(*) as incomplete_students
+            FROM student_quizzes
+            WHERE quiz_id = %s AND completed = 0
+        """, (quiz_id,))
+        result = cursor.fetchone()
+
+        # If no students are left with incomplete status, mark the quiz as complete
+        if result['incomplete_students'] == 0:
+            cursor.execute("""
+                UPDATE quizzes
+                SET active = 'Complete'
+                WHERE quiz_id = %s
+            """, (quiz_id,))
+            mysql.connection.commit()
+
         cursor.close()
 
         # Fetch student name
@@ -226,6 +239,7 @@ def submit_quiz():
     except Exception as e:
         print(f"Error occurred: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 
 @quiz_routes.route('/assign_quiz', methods=['POST'])
