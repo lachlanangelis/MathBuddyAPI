@@ -129,56 +129,76 @@ def signupStu():
     try:
         # Get MySQL connection
         mysql = get_mysql()
-        # Get the JSON data from the request
         data = request.get_json()
         password = data.get('password')
         email = data.get('email')
         phone = data.get('phone')
         full_name = data.get('full_name')
 
-        # Validate the input
         if not password or not email or not phone or not full_name:
             return jsonify({"error": "Missing required fields"}), 400
 
-        # Check if the email already exists in the database
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
-        user = cursor.fetchone()
+        if cursor.fetchone():
+            return jsonify({"error": "Student email already exists"}), 400
 
-        if user:
-            return jsonify({"error": "Email already exists"}), 400
-
-        # Hash the password
-        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-
-        # Insert the new user into the database
-        cursor.execute("INSERT INTO users (password, email, role, full_name, mobile_phone) VALUES (%s, %s, 'student', "
-                       "%s, %s)",
-                       (hashed_password.decode('utf-8'), email, full_name, phone))
-
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        cursor.execute(
+            "INSERT INTO users (password, email, role, full_name, mobile_phone) VALUES (%s, %s, 'student', %s, %s)",
+            (hashed_password, email, full_name, phone)
+        )
         mysql.connection.commit()
-
-        # Retrieve the user_id of the newly inserted user
         cursor.execute("SELECT user_id FROM users WHERE email = %s", (email,))
         user_record = cursor.fetchone()
-        user_id = user_record['user_id'] if user_record else None
+        student_user_id = user_record['user_id'] if user_record else None
 
-        if not user_id:
+        if not student_user_id:
             cursor.close()
-            return jsonify({"error": "Failed to retrieve user ID"}), 500
+            return jsonify({"error": "Failed to retrieve student user ID"}), 500
 
-        # Insert into student table
-        cursor.execute("INSERT INTO students (student_name, user_id) VALUES (%s, %s)",
-                       (full_name, user_id))
+        cursor.execute("INSERT INTO students (student_name, user_id) VALUES (%s, %s)", (full_name, student_user_id))
+        mysql.connection.commit()
+        
+        # Fetch the student_id from the students table
+        cursor.execute("SELECT student_id FROM students WHERE user_id = %s", (student_user_id,))
+        student_record = cursor.fetchone()
+        student_id = student_record['student_id'] if student_record else None
+
+        if not student_id:
+            cursor.close()
+            return jsonify({"error": "Failed to retrieve student ID"}), 500
+
+        parent_email = f"{full_name.replace(' ', '').lower()}@parent.com"
+        cursor.execute("SELECT * FROM users WHERE email = %s", (parent_email,))
+        if cursor.fetchone():
+            return jsonify({"error": "Parent email already exists"}), 400
+
+        cursor.execute(
+            "INSERT INTO users (password, email, role, full_name) VALUES (%s, %s, 'parent', %s)",
+            (hashed_password, parent_email, f"{full_name}'s Parent")
+        )
         mysql.connection.commit()
 
+        cursor.execute("SELECT user_id FROM users WHERE email = %s", (parent_email,))
+        parent_user_record = cursor.fetchone()
+        parent_user_id = parent_user_record['user_id'] if parent_user_record else None
+
+        if not parent_user_id:
+            cursor.close()
+            return jsonify({"error": "Failed to retrieve parent user ID"}), 500
+
+        # Insert into parents table using the correct student_id
+        cursor.execute("INSERT INTO parents (parent_name, user_id, child_id) VALUES (%s, %s, %s)", 
+                       (f"{full_name}'s Parent", parent_user_id, student_id))
+        mysql.connection.commit()
         cursor.close()
 
-        return jsonify({"message": "User registered successfully"}), 201
+        return jsonify({"message": "Student and Parent registered successfully"}), 201
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
 # parent signup route
 @auth_routes.route('/signupParent', methods=['POST'])
 def signup_parent():
