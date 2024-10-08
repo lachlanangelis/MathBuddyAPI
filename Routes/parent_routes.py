@@ -105,7 +105,7 @@ def get_pending_tasks():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Route to display Progress report (currently only displays scores of all quizzes)
+# Route to display Progress report
 @parent_routes.route('/get_child_progress', methods=['POST'])
 @jwt_required()
 def get_child_quiz_scores():
