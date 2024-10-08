@@ -408,3 +408,35 @@ def get_student_completed_quizzes():
 # still need ai functions to mark and give feedback!
 
 # Route to display active homework with quiz title and due date
+
+@student_routes.route('/get_student_grade', methods=['POST'])
+def get_student_grade():
+    try:
+        data = request.get_json()
+        token = data['token']
+        student_id = get_id(token)
+        
+        # Get MySQL connection
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        
+        # Query to get the student's grade from the classes table
+        cursor.execute("""
+            SELECT c.class_grade
+            FROM students s
+            JOIN classes c ON s.class_id = c.class_id
+            WHERE s.student_id = %s
+        """, (student_id,))
+        
+        grade_result = cursor.fetchone()
+        
+        if not grade_result:
+            return jsonify({"error": "Grade not found for this student"}), 404
+
+        # Close the cursor
+        cursor.close()
+        
+        return jsonify({"grade": grade_result['class_grade']}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
