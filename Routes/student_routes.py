@@ -141,6 +141,7 @@ def get_student_by_id():
         SELECT 
             s.student_id,
             s.student_name,
+            s.class_id,
             u.date_of_birth,
             u.gender,
             u.full_name,
