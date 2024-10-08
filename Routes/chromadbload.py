@@ -4,54 +4,39 @@ import chromadb
 from chromadb.config import Settings
 import uuid
 
-# Load the JSONL file
+# Load and parse the JSONL file containing the labeled training data
 file_path = '../traindata/labeled_train_data.jsonl'
 
-# Read the JSONL file and parse its content
+# Read the JSONL file and convert each line into a dictionary
 with open(file_path, 'r') as f:
     lines = f.readlines()
-
-# Convert each line in the JSONL file into a dictionary
 documents = [json.loads(line) for line in lines]
 
-# Initialize ChromaDB client
-print("Initializing ChromaDB client...")
+# Initialize ChromaDB client for managing embeddings and document storage
 client = chromadb.HttpClient(host='localhost', port=8000, settings=Settings(allow_reset=True))
 
-# Reset the database
+# Reset the ChromaDB database (if allowed)
 try:
-    client.reset()  # Reset the database
-    print("Database reset successful.")
+    client.reset()  # Clears the database, useful for fresh setups
 except Exception as e:
     print(f"Error resetting the database: {e}")
 
-# Create or connect to a collection named "my_collection"
-print("Creating or connecting to collection 'my_collection'...")
+# Create or connect to a collection named "my_collection" in ChromaDB
 collection = client.get_or_create_collection("my_collection")
 
 # Initialize the sentence transformer model for generating embeddings
-print("Loading embedding model...")
 embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 
-# Prepare lists for document IDs, texts, embeddings, and metadata
-print("Processing documents...")
+# Loop through the documents, generating embeddings and inserting them into the collection
 for idx, doc in enumerate(documents):
-    # Create a unique identifier for each document
+    # Generate a unique ID for each document
     document_id = str(uuid.uuid4())
     document_text = f"Question: {doc['question']} Answer: {doc['answer']}"
-
-    # Debug statements
-    print(f"Processing document {idx + 1}/{len(documents)}")
-    print(f"Document ID: {document_id}")
-    print(f"Document text: {document_text}")
 
     # Generate embeddings for the document text
     document_embedding = embedding_model.encode(document_text).tolist()
 
-    # Debug statement
-    print(f"Generated embedding for document {document_id}: {document_embedding[:5]}... (truncated)")
-
-    # Add the document to the collection with embeddings and metadata
+    # Add the document with embeddings and metadata to the collection
     try:
         collection.add(
             ids=[document_id],
@@ -63,8 +48,8 @@ for idx, doc in enumerate(documents):
             }],
             documents=[document_text]
         )
-        print(f"Document {document_id} added successfully.")
     except Exception as e:
         print(f"Error adding document {document_id}: {e}")
 
-print("Documents inserted into ChromaDB.")
+# Print completion message
+print("Documents successfully inserted into ChromaDB.")

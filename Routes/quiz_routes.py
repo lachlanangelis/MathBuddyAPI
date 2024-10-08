@@ -4,13 +4,14 @@ from Routes.ollama_routes import *
 from decorator import *
 from Routes.Lresources import search_articlesFunc, search_videosFunc
 
+# Create a Blueprint for quiz-related routes
 quiz_routes = Blueprint('quiz_routes', __name__)
 
-
+# Helper function to get MySQL connection
 def get_mysql():
     return current_app.config['mysql']
 
-
+# Route to create a new quiz
 @quiz_routes.route('/create_quiz', methods=['POST'])
 def create_quiz():
     try:
@@ -19,11 +20,12 @@ def create_quiz():
             data = request.get_json()
             topic = data.get('topic')
             number_of_questions = data.get('number_of_questions')
-            class_id = data.get('class_id')  # Assume this is sent in the request body
+            class_id = data.get('class_id')  # Class ID is assumed to be sent in the request body
 
+            # Ensure required parameters are provided
             if topic and number_of_questions and class_id:
-                # Generate the quiz
-                difficulty = "medium"  # Define the difficulty level as needed
+                # Generate quiz questions based on the topic and difficulty level
+                difficulty = "medium"
                 questions = generate_quiz_questions(topic, number_of_questions, difficulty)
 
                 mysql = get_mysql()
@@ -39,7 +41,7 @@ def create_quiz():
                 quiz_id = cursor.lastrowid
                 mysql.connection.commit()
 
-                # Insert each question into the quiz_questions table with the generated quiz_id
+                # Insert each question into the quiz_questions table
                 for question in questions:
                     cursor.execute("""
                         INSERT INTO quiz_questions (quiz_id, question_text, correct_answer)
@@ -49,26 +51,23 @@ def create_quiz():
 
                 cursor.close()
 
-                # Return the generated quiz ID and questions as JSON
+                # Return the generated quiz ID and questions
                 return jsonify({"quiz_id": quiz_id, "questions": questions}), 200
             else:
-                # Return an error if any parameter is missing
+                # Return an error if required parameters are missing
                 return jsonify({"error": "Missing required parameters"}), 400
     except Exception as e:
-        print(f"Error occurred: {e}")
         return jsonify({"error": str(e)}), 500
 
-
+# Helper function to generate quiz questions
 def generate_quiz_questions(topic, number_of_questions, difficulty):
     questions = []
     for i in range(number_of_questions):
         # Create a query for generating each question based on the topic and difficulty
         query = f"Generate a {difficulty} level question on {topic}. Here are the previous questions. {questions}."
 
-        # Extract context related to the query
+        # Extract context and generate response
         context = extract_context(query)
-
-        # Generate a response using the context and query
         response = generate_rag_response(context, query)
         question_text = response
 
@@ -80,49 +79,37 @@ def generate_quiz_questions(topic, number_of_questions, difficulty):
         answer_response = get_answer(answer_query)
         correct_answer = answer_response
 
-        # Store the quiz question and answer in the database
-
         # Add the question and answer to the questions list
         questions.append({"question": question_text, "answer": correct_answer})
 
     return questions
 
-
-# Function to generate feedback using an LLM through Ollama
 # Function to generate feedback using an LLM through Ollama and store it in the database
 def generate_feedback(student_id, quiz_id, student_name, grade):
-    from app import app  # Import your Flask app
+    from app import app  # Import the Flask app
 
     with app.app_context():  # Push an application context
         try:
-            # Prepare the data for the feedback generation
+            # Prepare the data for feedback generation
             results = {
                 "student": student_name,
                 "result": grade,
             }
-            print(f"Generating feedback for: {results}")  # Debugging statement
 
-            # Create the query for the feedback prompt
+            # Create the query and feedback prompt
             query = get_quizQuery(results)
-            print(f"Generated quiz query: {query}")  # Debugging statement
-
-            # Create the full feedback prompt
             prompt = get_feedbackPrompt(query)
-            print(f"Generated feedback prompt: {prompt}")  # Debugging statement
 
             # Send the request to Ollama LLM
             response = get_response(prompt)
-            print(f"Response from LLM: {response}")  # Debugging statement
 
-            # Extract JSON data from the Response object
+            # Extract JSON data from the response
             feedback_content = response.get_json()
-            print(f"Extracted feedback content: {feedback_content}")  # Debugging statement
 
-            # Check if 'message' is in feedback_content, since that's where the feedback is stored
+            # Store feedback in the database if it exists
             if 'message' not in feedback_content:
-                raise ValueError("No 'message' field in feedback_content")  # Error handling
+                raise ValueError("No 'message' field in feedback_content")
 
-            # Store feedback in the database
             mysql = get_mysql()
             cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
@@ -133,20 +120,13 @@ def generate_feedback(student_id, quiz_id, student_name, grade):
 
             mysql.connection.commit()
             cursor.close()
-            print("Feedback stored successfully in the database.")  # Debugging statement
 
-            feedback = {"feedback": feedback_content}
-
-            print(f"Final feedback object: {feedback}")  # Debugging statement
-
-            # Return feedback as JSON response
-            return jsonify(feedback)
+            return jsonify({"feedback": feedback_content})
 
         except Exception as e:
-            print(f"Error in generate_feedback: {e}")  # Debugging statement
             return jsonify({"error": str(e)})
 
-
+# Route to submit a quiz and grade it
 @quiz_routes.route('/submit_quiz', methods=['POST'])
 def submit_quiz():
     try:
@@ -155,15 +135,16 @@ def submit_quiz():
         token = data['token']
         student_id = get_id(token)
         quiz_id = data.get('quiz_id')
-        student_answers = data.get('answers')  # Expected to be a dict with question_id as keys
+        student_answers = data.get('answers')
 
+        # Ensure required parameters are provided
         if not student_id or not quiz_id or not student_answers:
             return jsonify({"error": "Missing required parameters"}), 400
 
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-        # Retrieve correct answers for the quiz from the database
+        # Retrieve correct answers from the database
         cursor.execute("""
             SELECT qq.question_id, qq.correct_answer
             FROM quiz_questions qq
@@ -171,31 +152,20 @@ def submit_quiz():
         """, (quiz_id,))
         correct_answers = cursor.fetchall()
 
-        # Initialize variables for grading
+        # Grade the quiz
         total_questions = len(correct_answers)
         correct_count = 0
-
-        # Compare submitted answers with correct answers
         for question in correct_answers:
             question_id = question['question_id']
             correct_answer = question['correct_answer']
+            student_answer = student_answers.get(str(question_id))
+            if student_answer and str(student_answer).strip().lower() == str(correct_answer).strip().lower():
+                correct_count += 1
 
-            # Debugging output
-            print(f"Checking question ID {question_id}: correct answer is {correct_answer}")
-
-            # Check if the student answered this question
-            student_answer = student_answers.get(str(question_id))  # Ensure key is a string for dict access
-            print(f"Student's answer: {student_answer}")
-
-            if student_answer is not None:
-                if str(student_answer).strip().lower() == str(correct_answer).strip().lower():
-                    correct_count += 1
-            # If student_answer is None, the question was unanswered and gets no marks
-
-        # Calculate grade as percentage
+        # Calculate grade
         grade = (correct_count / total_questions) * 100
 
-        # Store the grade and mark the quiz as completed
+        # Update the student_quizzes table with the score
         cursor.execute("""
             UPDATE student_quizzes
             SET score = %s, completed = 1, completed_at = NOW()
@@ -204,7 +174,7 @@ def submit_quiz():
         mysql.connection.commit()
         cursor.close()
 
-        # Fetch student name
+        # Fetch the student's name for feedback generation
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute("""
             SELECT student_name
@@ -214,7 +184,7 @@ def submit_quiz():
         student_name = cursor.fetchone()['student_name']
         cursor.close()
 
-        # Return the grade to the student immediately
+        # Return the grade immediately
         response = jsonify({"message": "Quiz submitted and graded successfully", "grade": grade})
 
         # Generate feedback asynchronously and store it in the database
@@ -224,10 +194,9 @@ def submit_quiz():
         return response, 200
 
     except Exception as e:
-        print(f"Error occurred: {e}")
         return jsonify({"error": str(e)}), 500
 
-
+# Route to assign a quiz to all students in a class
 @quiz_routes.route('/assign_quiz', methods=['POST'])
 def assign_quiz():
     try:
@@ -236,13 +205,14 @@ def assign_quiz():
         class_name = data.get('class_name')
         quiz_id = data.get('quiz_id')
 
+        # Ensure required parameters are provided
         if not class_name or not quiz_id:
             return jsonify({"error": "Missing required parameters"}), 400
 
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-        # Fetch the class ID from the class name
+        # Fetch the class ID based on class name
         cursor.execute("""
             SELECT class_id
             FROM classes
@@ -255,7 +225,7 @@ def assign_quiz():
 
         class_id = class_data['class_id']
 
-        # Fetch all student IDs from the class
+        # Fetch all student IDs in the class
         cursor.execute("""
             SELECT student_id
             FROM students
@@ -266,7 +236,7 @@ def assign_quiz():
         if not students:
             return jsonify({"error": "No students found in the specified class"}), 404
 
-        # Insert each student into the student_quizzes table
+        # Assign the quiz to each student in the class
         for student in students:
             student_id = student['student_id']
             cursor.execute("""
@@ -287,10 +257,9 @@ def assign_quiz():
         return jsonify({"message": "Quiz assigned to all students successfully"}), 200
 
     except Exception as e:
-        print(f"Error occurred: {e}")
         return jsonify({"error": str(e)}), 500
 
-
+# Route to get quiz completion details for all students in a class
 @quiz_routes.route('/quiz_completion_details', methods=['POST'])
 def quiz_completion_details():
     try:
@@ -299,13 +268,14 @@ def quiz_completion_details():
         class_name = data.get('class_name')
         quiz_id = data.get('quiz_id')
 
+        # Ensure required parameters are provided
         if not class_name or not quiz_id:
             return jsonify({"error": "Missing required parameters"}), 400
 
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-        # Fetch the class ID from the class name
+        # Fetch the class ID based on class name
         cursor.execute("""
             SELECT class_id
             FROM classes
@@ -318,7 +288,7 @@ def quiz_completion_details():
 
         class_id = class_data['class_id']
 
-        # Fetch all students in the class
+        # Fetch all students and their quiz completion details
         cursor.execute("""
             SELECT student_id, student_name
             FROM students
@@ -326,16 +296,12 @@ def quiz_completion_details():
         """, (class_id,))
         students = cursor.fetchall()
 
-        if not students:
-            return jsonify({"error": "No students found in the specified class"}), 404
-
-        # Fetch quiz details for each student
         result = []
         for student in students:
             student_id = student['student_id']
             student_name = student['student_name']
 
-            # Fetch quiz completion details
+            # Fetch quiz completion details for each student
             cursor.execute("""
                 SELECT score, completed_at
                 FROM student_quizzes
@@ -373,90 +339,9 @@ def quiz_completion_details():
         return jsonify(result), 200
 
     except Exception as e:
-        print(f"Error occurred: {e}")
         return jsonify({"error": str(e)}), 500
 
-
-@quiz_routes.route('/student_quiz_complete', methods=['POST'])
-def student_quiz_complete():
-    try:
-        # Retrieve the JSON data from the request
-        data = request.get_json()
-        token = data.get('token')
-        quiz_id = data.get('quiz_id')
-
-        if not token or not quiz_id:
-            return jsonify({"error": "Missing required parameters"}), 400
-
-        # Get the student ID from the token
-        student_id = get_id(token)
-        if not student_id:
-            return jsonify({"error": "Invalid token"}), 400
-
-        mysql = get_mysql()
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-
-        # Get the quiz name
-        cursor.execute("""
-            SELECT title
-            FROM quizzes
-            WHERE quiz_id = %s
-        """, (quiz_id,))
-        quiz = cursor.fetchone()
-        if not quiz:
-            return jsonify({"error": "Quiz not found"}), 404
-
-        quiz_name = quiz['title']
-
-        # Extract the topic from the quiz title
-        topic = quiz_name.split('Quiz on ')[1] if 'Quiz on ' in quiz_name else quiz_name
-
-        # Get the student's quiz details (score, completion time)
-        cursor.execute("""
-            SELECT score, completed_at
-            FROM student_quizzes
-            WHERE student_id = %s AND quiz_id = %s
-        """, (student_id, quiz_id))
-        student_quiz = cursor.fetchone()
-        if not student_quiz:
-            return jsonify({"error": "No quiz submission found for this student"}), 404
-
-        student_score = student_quiz['score']
-        completed_at = student_quiz['completed_at']
-
-        # Get the feedback from the database
-        cursor.execute("""
-            SELECT feedback_text_ai
-            FROM feedback
-            WHERE student_id = %s AND quiz_id = %s
-        """, (student_id, quiz_id))
-        feedback_data = cursor.fetchone()
-        feedback = feedback_data['feedback_text_ai'] if feedback_data else None
-
-        # Search for a related video based on the extracted topic
-        video_result = search_videosFunc(topic)
-        video_url = video_result.get('video_url') if 'video_url' in video_result else None
-
-        # Search for related articles based on the extracted topic
-        article_result = search_articlesFunc([topic])  # Pass as list if necessary
-        articles = article_result.get('articles') if 'articles' in article_result else []
-
-        cursor.close()
-
-        # Return the required details along with video and articles
-        return jsonify({
-            "quiz_name": quiz_name,
-            "student_score": student_score,
-            "completed_at": completed_at,
-            "feedback": feedback,
-            "related_video": video_url,
-            "related_articles": articles
-        }), 200
-
-    except Exception as e:
-        print(f"Error occurred: {e}")
-        return jsonify({"error": str(e)}), 500
-
+# Route to get student quiz completion details for a parent
 @quiz_routes.route('/parent_quiz_complete', methods=['POST'])
 def parent_quiz_complete():
     try:
@@ -466,6 +351,7 @@ def parent_quiz_complete():
         quiz_id = data.get('quiz_id')
         student_id_param = data.get('student_id')  # Parent needs to provide student_id
 
+        # Ensure required parameters are provided
         if not token or not quiz_id or not student_id_param:
             return jsonify({"error": "Missing required parameters"}), 400
 
@@ -483,34 +369,16 @@ def parent_quiz_complete():
             FROM parents
             WHERE parent_id = %s AND child_id = %s
         """, (parent_id, student_id_param))
-        
-        # Check if the result is found
+
         student = cursor.fetchone()
-        
         if not student:
             return jsonify({"error": "Parent does not have access to this student's data"}), 403
-        
-        student_id = student.get('student_id')  # Make sure 'student_id' exists
 
+        student_id = student.get('student_id')
         if not student_id:
             return jsonify({"error": "Student ID not found in database"}), 404
 
-        # Get the quiz name
-        cursor.execute("""
-            SELECT title
-            FROM quizzes
-            WHERE quiz_id = %s
-        """, (quiz_id,))
-        quiz = cursor.fetchone()
-        if not quiz:
-            return jsonify({"error": "Quiz not found"}), 404
-
-        quiz_name = quiz['title']
-
-        # Extract the topic from the quiz title
-        topic = quiz_name.split('Quiz on ')[1] if 'Quiz on ' in quiz_name else quiz_name
-
-        # Get the student's quiz details (score, completion time)
+        # Get the quiz details
         cursor.execute("""
             SELECT score, completed_at
             FROM student_quizzes
@@ -532,26 +400,23 @@ def parent_quiz_complete():
         feedback_data = cursor.fetchone()
         feedback = feedback_data['feedback_text_ai'] if feedback_data else None
 
-        # Search for a related video based on the extracted topic
+        # Search for related videos and articles based on the quiz topic
+        quiz_name = student_quiz['title']
+        topic = quiz_name.split('Quiz on ')[1] if 'Quiz on ' in quiz_name else quiz_name
         video_result = search_videosFunc(topic)
-        video_url = video_result.get('video_url') if 'video_url' in video_result else None
-
-        # Search for related articles based on the extracted topic
-        article_result = search_articlesFunc([topic])  # Pass as list if necessary
-        articles = article_result.get('articles') if 'articles' in article_result else []
+        article_result = search_articlesFunc([topic])
 
         cursor.close()
 
-        # Return the required details along with video and articles
+        # Return the required details along with related videos and articles
         return jsonify({
             "quiz_name": quiz_name,
             "student_score": student_score,
             "completed_at": completed_at,
             "feedback": feedback,
-            "related_video": video_url,
-            "related_articles": articles
+            "related_video": video_result.get('video_url'),
+            "related_articles": article_result.get('articles')
         }), 200
 
     except Exception as e:
-        print(f"Error occurred: {e}")
         return jsonify({"error": str(e)}), 500

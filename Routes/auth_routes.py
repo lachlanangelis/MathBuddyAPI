@@ -12,6 +12,7 @@ def get_mysql():
     return current_app.config['mysql']
 
 
+# Route for user login
 @auth_routes.route('/login', methods=['POST'])
 def login():
     try:
@@ -48,7 +49,7 @@ def login():
                 full_name = user.get('full_name')
                 role = user.get('role')
 
-                # Return the token, full_name, and other user details
+                # Return the token and user details
                 return jsonify({
                     "access_token": access_token,
                     "personObj": {
@@ -63,12 +64,11 @@ def login():
             return jsonify({"message": "User not found"}), 404
 
     except Exception as e:
-        # Log the exception details for debugging
-        print(f"Error: {e}")
+        # Return error response on failure
         return jsonify({"error": "An error occurred during login. Please try again later."}), 500
-    
-# Define the signup route
-# TODO separate teacher and student signup
+
+
+# Route for teacher signup
 @auth_routes.route('/signupTeach', methods=['POST'])
 def signup():
     try:
@@ -98,8 +98,7 @@ def signup():
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
         # Insert the new user into the database
-        cursor.execute("INSERT INTO users (password, email, role, full_name, mobile_phone) VALUES (%s, %s, 'teacher', "
-                       "%s, %s)",
+        cursor.execute("INSERT INTO users (password, email, role, full_name, mobile_phone) VALUES (%s, %s, 'teacher', %s, %s)",
                        (hashed_password.decode('utf-8'), email, full_name, phone))
         mysql.connection.commit()
 
@@ -124,6 +123,7 @@ def signup():
         return jsonify({"error": str(e)}), 500
 
 
+# Route for student signup
 @auth_routes.route('/signupStu', methods=['POST'])
 def signupStu():
     try:
@@ -152,10 +152,8 @@ def signupStu():
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
         # Insert the new user into the database
-        cursor.execute("INSERT INTO users (password, email, role, full_name, mobile_phone) VALUES (%s, %s, 'student', "
-                       "%s, %s)",
+        cursor.execute("INSERT INTO users (password, email, role, full_name, mobile_phone) VALUES (%s, %s, 'student', %s, %s)",
                        (hashed_password.decode('utf-8'), email, full_name, phone))
-
         mysql.connection.commit()
 
         # Retrieve the user_id of the newly inserted user
@@ -167,19 +165,19 @@ def signupStu():
             cursor.close()
             return jsonify({"error": "Failed to retrieve user ID"}), 500
 
-        # Insert into student table
+        # Insert into students table
         cursor.execute("INSERT INTO students (student_name, user_id) VALUES (%s, %s)",
                        (full_name, user_id))
         mysql.connection.commit()
-
         cursor.close()
 
         return jsonify({"message": "User registered successfully"}), 201
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
-# parent signup route
+
+
+# Route for parent signup
 @auth_routes.route('/signupParent', methods=['POST'])
 def signup_parent():
     try:
