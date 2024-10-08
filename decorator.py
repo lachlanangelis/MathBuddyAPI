@@ -5,69 +5,83 @@ import jwt
 import MySQLdb.cursors
 from env_var import api_key
 
-# Blueprint to define the routes for the decorators
 decorator_routes = Blueprint('decorator_routes', __name__)
 
-# Function to access MySQL database configuration from Flask's app context
 def get_mysql():
     with current_app.app_context():
+        print("Accessing MySQL database configuration...")
         return current_app.config['mysql']
 
-# Decorator to enforce role-based access control
 def role_required(role):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            user = get_jwt_identity()  # Retrieve user identity from JWT
-            if user and user['role'] == role:  # Check if the user has the required role
+            user = get_jwt_identity()
+            print(f"User retrieved from JWT: {user}")
+            if user and user['role'] == role:
                 return f(*args, **kwargs)
             else:
-                return jsonify({"message": "Access forbidden: insufficient rights"}), 403  # Forbidden if role mismatch
+                print("Access forbidden: insufficient rights")
+                return jsonify({"message": "Access forbidden: insufficient rights"}), 403
 
         return decorated_function
+
     return decorator
 
-# Function to decode JWT and retrieve role and email from the token
 def get_role(jwt_token):
     try:
-        decoded_token = jwt.decode(jwt_token, api_key, algorithms=["HS256"])  # Decode JWT token
-        identity = decoded_token.get('sub')  # Retrieve identity (sub) from the token
+        print(f"Decoding JWT token: {jwt_token}")
+        decoded_token = jwt.decode(jwt_token, api_key, algorithms=["HS256"])
+        identity = decoded_token.get('sub')
         if identity:
-            return {"role": identity.get('role'), "email": identity.get('email')}  # Return role and email
+            role = identity.get('role')
+            email = identity.get('email')
+            print(f"Decoded identity: role={role}, email={email}")
+            return {"role": role, "email": email}
         else:
-            return None  # No identity found in the token
+            print("No identity found in token")
+            return None
     except jwt.ExpiredSignatureError:
-        return {"message": "Token expired"}, 401  # Token has expired
+        print("Token expired")
+        return {"message": "Token expired"}, 401
     except jwt.InvalidTokenError:
-        return {"message": "Invalid token"}, 401  # Token is invalid
+        print("Invalid token")
+        return {"message": "Invalid token"}, 401
     except Exception as e:
-        return {"message": str(e)}, 401  # Handle other exceptions
+        print(f"Error decoding token: {str(e)}")
+        return {"message": str(e)}, 401
 
-# Function to decode JWT and retrieve email from the token
 def get_email(jwt_token):
     try:
-        decoded_token = jwt.decode(jwt_token, api_key, algorithms=["HS256"])  # Decode JWT token
-        identity = decoded_token.get('sub')  # Retrieve identity (sub) from the token
+        print(f"Decoding JWT token: {jwt_token}")
+        decoded_token = jwt.decode(jwt_token, api_key, algorithms=["HS256"])
+        identity = decoded_token.get('sub')
         if identity:
-            return identity.get('email')  # Return email
+            email = identity.get('email')
+            print(f"Decoded email: {email}")
+            return email
         else:
-            return None  # No identity found in the token
+            print("No identity found in token")
+            return None
     except jwt.ExpiredSignatureError:
-        return {"message": "Token expired"}, 401  # Token has expired
+        print("Token expired")
+        return {"message": "Token expired"}, 401
     except jwt.InvalidTokenError:
-        return {"message": "Invalid token"}, 401  # Token is invalid
+        print("Invalid token")
+        return {"message": "Invalid token"}, 401
     except Exception as e:
-        return {"message": str(e)}, 401  # Handle other exceptions
+        print(f"Error decoding token: {str(e)}")
+        return {"message": str(e)}, 401
 
-# Function to decode JWT and retrieve user ID based on role (student, teacher, parent)
 def get_id(jwt_token):
     try:
-        decoded_token = jwt.decode(jwt_token, api_key, algorithms=["HS256"])  # Decode JWT token
-        sub = decoded_token.get('sub', {})  # Retrieve the 'sub' (identity) from the token
+        print(f"Decoding JWT token: {jwt_token}")
+        decoded_token = jwt.decode(jwt_token, api_key, algorithms=["HS256"])
+        sub = decoded_token.get('sub', {})
         if sub:
             role = sub.get('role')
             user_id = sub.get('user_id')
-            # Route to the correct function based on the user's role
+            print(f"Decoded sub: role={role}, user_id={user_id}")
             if role == 'student':
                 return get_student_id(user_id)
             elif role == 'teacher':
@@ -75,94 +89,111 @@ def get_id(jwt_token):
             elif role == 'parent':
                 return get_parent_id(user_id)
             else:
-                raise ValueError("Unknown role")  # Raise error for unknown roles
+                raise ValueError("Unknown role")
         else:
-            raise ValueError("Invalid token")  # Invalid token if 'sub' not found
+            raise ValueError("Invalid token")
     except jwt.ExpiredSignatureError:
-        return {"error": "Token has expired"}, 401  # Token has expired
+        print("Token expired")
+        return {"error": "Token has expired"}, 401
     except jwt.InvalidTokenError:
-        return {"error": "Invalid token"}, 401  # Token is invalid
+        print("Invalid token")
+        return {"error": "Invalid token"}, 401
     except Exception as e:
-        return {"error": str(e)}, 500  # Handle other exceptions
+        print(f"Error decoding token: {str(e)}")
+        return {"error": str(e)}, 500
 
-# Function to decode JWT and retrieve user ID
+
 def get_uid(jwt_token):
     try:
-        decoded_token = jwt.decode(jwt_token, api_key, algorithms=["HS256"])  # Decode JWT token
-        sub = decoded_token.get('sub', {})  # Retrieve the 'sub' (identity) from the token
+        decoded_token = jwt.decode(jwt_token, api_key, algorithms=["HS256"])
+        sub = decoded_token.get('sub', {})
         if sub:
-            return sub.get('user_id')  # Return user ID
+            role = sub.get('role')
+            user_id = sub.get('user_id')
+            return user_id
     except Exception as e:
-        return None  # Handle any exceptions by returning None
+        print(f"Error querying student ID: {str(e)}")
+        return None
 
-# Retrieve student ID from the database using the user's ID
+
 def get_student_id(user_id):
     try:
-        mysql = get_mysql()  # Get MySQL connection
+        mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        print(f"Querying for student_id with user_id={user_id}")
         query = "SELECT student_id FROM students WHERE user_id = %s"
-        cursor.execute(query, (user_id,))  # Execute query to fetch student ID
+        cursor.execute(query, (user_id,))
         stu_id = cursor.fetchone()
+        print(f"Student ID retrieved: {stu_id}")
         cursor.close()
-        return stu_id["student_id"]  # Return student ID
+        return stu_id["student_id"]
     except Exception as e:
-        return None  # Handle any exceptions by returning None
+        print(f"Error querying student ID: {str(e)}")
+        return None
 
-# Retrieve teacher ID from the database using the user's ID
 def get_teacher_id(user_id):
     try:
-        mysql = get_mysql()  # Get MySQL connection
+        mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        print(f"Querying for teacher_id with user_id={user_id}")
         query = "SELECT teacher_id FROM teachers WHERE user_id = %s"
-        cursor.execute(query, (user_id,))  # Execute query to fetch teacher ID
+        cursor.execute(query, (user_id,))
         teacher_id = cursor.fetchone()
+        print(f"Teacher ID retrieved: {teacher_id}")
         cursor.close()
-        return teacher_id["teacher_id"] if teacher_id else None  # Return teacher ID or None if not found
+        return teacher_id["teacher_id"] if teacher_id else None
     except Exception as e:
-        return None  # Handle any exceptions by returning None
+        print(f"Error querying teacher ID: {str(e)}")
+        return None
 
-# Retrieve parent ID from the database using the user's ID
 def get_parent_id(user_id):
     try:
-        mysql = get_mysql()  # Get MySQL connection
+        mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        print(f"Querying for parent_id with user_id={user_id}")
         query = "SELECT parent_id FROM parents WHERE user_id = %s"
-        cursor.execute(query, (user_id,))  # Execute query to fetch parent ID
+        cursor.execute(query, (user_id,))
         parent_id = cursor.fetchone()
+        print(f"Parent ID retrieved: {parent_id}")
         cursor.close()
-        return parent_id["parent_id"] if parent_id else None  # Return parent ID or None if not found
+        return parent_id["parent_id"] if parent_id else None
     except Exception as e:
-        return None  # Handle any exceptions by returning None
+        print(f"Error querying parent ID: {str(e)}")
+        return None
 
-# Route to get the role from a JWT token
+# Example route to get the role from a JWT token
 @decorator_routes.route('/get_role', methods=['POST'])
 def role_route():
-    jwt_token = request.json.get('token')  # Extract token from request
+    jwt_token = request.json.get('token')
     if not jwt_token:
-        return jsonify({"message": "Token is required"}), 400  # Return error if token is missing
-    result = get_role(jwt_token)  # Get role from token
+        return jsonify({"message": "Token is required"}), 400
+
+    result = get_role(jwt_token)
     return jsonify(result)
 
-# Route to get the email from a JWT token
+# Example route to get the email from a JWT token
 @decorator_routes.route('/get_email', methods=['POST'])
 def email_route():
-    jwt_token = request.json.get('token')  # Extract token from request
+    jwt_token = request.json.get('token')
     if not jwt_token:
-        return jsonify({"message": "Token is required"}), 400  # Return error if token is missing
-    email = get_email(jwt_token)  # Get email from token
-    if email:
-        return jsonify({"email": email})  # Return email if found
-    else:
-        return jsonify({"message": "Email not found"}), 404  # Return error if email is not found
+        return jsonify({"message": "Token is required"}), 400
 
-# Route to get the user ID from a JWT token
+    email = get_email(jwt_token)
+    if email:
+        return jsonify({"email": email})
+    else:
+        return jsonify({"message": "Email not found"}), 404
+
+# Example route to get the user ID from a JWT token
 @decorator_routes.route('/get_id', methods=['POST'])
 def id_route():
-    jwt_token = request.json.get('token')  # Extract token from request
+    jwt_token = request.json.get('token')
     if not jwt_token:
-        return jsonify({"message": "Token is required"}), 400  # Return error if token is missing
-    user_id = get_id(jwt_token)  # Get user ID from token
+        return jsonify({"message": "Token is required"}), 400
+
+    user_id = get_id(jwt_token)
     if isinstance(user_id, dict):  # Check if the response is an error message
-        return jsonify(user_id), 401  # Return error if JWT validation failed
+        return jsonify(user_id), 401
     else:
-        return jsonify({"user_id": user_id})  # Return user ID if successful
+        return jsonify({"user_id": user_id})
+

@@ -1,42 +1,33 @@
 import MySQLdb.cursors
 from flask import Blueprint, jsonify, current_app, request
 from flask_jwt_extended import jwt_required, decode_token
-from decorator import get_id
+from decorator import *
 
-# Create a Blueprint for parent-related routes
 parent_routes = Blueprint('parent_routes', __name__)
 
-
-# Helper function to get MySQL connection
 def get_mysql():
     return current_app.config['mysql']
 
-
-# Helper function to extract parent_id from the JWT token
+# Helper function to extract parent_id from token
 def get_parent_id_from_token(token):
     decoded_token = decode_token(token)
     return decoded_token['sub']['user_id']
 
-
-# Route to get the child's information associated with the parent
+# Route to display the child information of the parent
 @parent_routes.route('/child_info', methods=['POST'])
 @jwt_required()
 def get_child_info():
     try:
         data = request.get_json()
         token = data.get('token')
-
-        # Check if the token is provided
         if not token:
             return jsonify({"error": "Missing token"}), 400
 
-        # Extract parent ID from the token
         parent_id = get_id(token)
 
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-
-        # Query to get child information
+        
         query = '''
         SELECT 
             s.student_id,
@@ -54,7 +45,7 @@ def get_child_info():
         WHERE 
             p.parent_id = %s
         '''
-
+        
         cursor.execute(query, (parent_id,))
         child_info = cursor.fetchone()
         cursor.close()
@@ -67,16 +58,13 @@ def get_child_info():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-# Route to get pending tasks (quizzes) for the child
+# Route to display pending tasks of the child 
 @parent_routes.route('/get_pending_tasks', methods=['POST'])
 @jwt_required()
 def get_pending_tasks():
     try:
         data = request.get_json()
         token = data.get('token')
-
-        # Check if the token is provided
         if not token:
             return jsonify({"error": "Missing token"}), 400
 
@@ -84,8 +72,7 @@ def get_pending_tasks():
 
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-
-        # Query to get pending tasks (quizzes)
+        
         sql_query = '''
         SELECT 
             q.quiz_id,
@@ -107,6 +94,7 @@ def get_pending_tasks():
 
         cursor.execute(sql_query, (parent_id,))
         pending_tasks = cursor.fetchall()
+
         cursor.close()
 
         if pending_tasks:
@@ -117,16 +105,13 @@ def get_pending_tasks():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-# Route to get child's progress (quiz scores)
+# Route to display Progress report (currently only displays scores of all quizzes)
 @parent_routes.route('/get_child_progress', methods=['POST'])
 @jwt_required()
 def get_child_quiz_scores():
     try:
         data = request.get_json()
         token = data.get('token')
-
-        # Check if the token is provided
         if not token:
             return jsonify({"error": "Missing token"}), 400
 
@@ -135,7 +120,6 @@ def get_child_quiz_scores():
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-        # Query to get quiz scores
         sql_query = '''
         SELECT 
             q.quiz_id,
@@ -153,6 +137,7 @@ def get_child_quiz_scores():
 
         cursor.execute(sql_query, (parent_id,))
         quiz_scores = cursor.fetchall()
+
         cursor.close()
 
         if quiz_scores:
@@ -163,16 +148,13 @@ def get_child_quiz_scores():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-# Route to get completed quizzes of the child
+# Route to display Child quizzes
 @parent_routes.route('/get_completed_quizzes', methods=['POST'])
 @jwt_required()
 def get_completed_quizzes():
     try:
         data = request.get_json()
         token = data.get('token')
-
-        # Check if the token is provided
         if not token:
             return jsonify({"error": "Missing token"}), 400
 
@@ -181,7 +163,6 @@ def get_completed_quizzes():
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-        # Query to get completed quizzes
         query = """
         SELECT 
             q.quiz_id AS quiz_id,
@@ -211,8 +192,7 @@ def get_completed_quizzes():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-# Route to get feedback on a specific quiz for the child
+# Route to display child feedback on a specific quiz
 @parent_routes.route('/get_child_quiz_feedback', methods=['POST'])
 @jwt_required()
 def get_child_quiz_feedback():
@@ -221,7 +201,6 @@ def get_child_quiz_feedback():
         token = data.get('token')
         quiz_id = data.get('quiz_id')
 
-        # Check if token and quiz_id are provided
         if not token or not quiz_id:
             return jsonify({"error": "Missing token or quiz_id parameter"}), 400
 
@@ -230,7 +209,6 @@ def get_child_quiz_feedback():
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-        # Query to get quiz feedback for the child
         query = """
         SELECT 
             sq.student_id,
@@ -263,8 +241,7 @@ def get_child_quiz_feedback():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-# Route to get parent information
+# Route to display parent information
 @parent_routes.route('/parent_info', methods=['POST'])
 @jwt_required()
 def get_parent_info():
@@ -272,16 +249,15 @@ def get_parent_info():
         data = request.get_json()
         token = data.get('token')
 
-        # Check if the token is provided
         if not token:
             return jsonify({"error": "Missing token"}), 400
 
         parent_id = get_id(token)
+        print(parent_id)
 
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-
-        # Query to get parent information
+        
         query = """
         SELECT 
             p.parent_name,
@@ -304,7 +280,7 @@ def get_parent_info():
         WHERE 
             p.parent_id = %s
         """
-
+        
         cursor.execute(query, (parent_id,))
         parent_info = cursor.fetchone()
         cursor.close()
@@ -313,12 +289,11 @@ def get_parent_info():
             return jsonify(parent_info), 200
         else:
             return jsonify({"message": "No parent found with the given parent_id"}), 404
-
+    
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-# Route to update parent information
+# Route to edit parent information
 @parent_routes.route('/update_parent_info', methods=['POST'])
 @jwt_required()
 def update_parent_info():
@@ -326,13 +301,12 @@ def update_parent_info():
         data = request.get_json()
         token = data.get('token')
 
-        # Check if the token is provided
         if not token:
             return jsonify({"error": "Missing token"}), 400
 
         parent_id = get_id(token)
 
-        # Collect fields that can be updated
+        # Optional fields that can be updated
         parent_name = data.get('parent_name')
         date_of_birth = data.get('date_of_birth')
         gender = data.get('gender')
@@ -350,13 +324,13 @@ def update_parent_info():
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-        # Lists to store update queries and parameters
+        # Initialize update queries and parameters list
         update_fields_parents = []
         update_fields_users = []
         parameters_parents = []
         parameters_users = []
 
-        # Conditionally build the update queries based on provided data
+        # Conditionally build the update query based on provided data
         if parent_name:
             update_fields_parents.append("parent_name = %s")
             parameters_parents.append(parent_name)
@@ -409,11 +383,11 @@ def update_parent_info():
             update_fields_users.append("password = %s")
             parameters_users.append(password)
 
-        # Ensure that there's something to update
+        # Ensure there is something to update
         if not update_fields_parents and not update_fields_users:
             return jsonify({"error": "No valid fields provided for update"}), 400
 
-        # Update the parents table if applicable
+        # Update the parents table
         if update_fields_parents:
             update_parents_query = f"""
             UPDATE parents
@@ -423,7 +397,7 @@ def update_parent_info():
             parameters_parents.append(parent_id)
             cursor.execute(update_parents_query, tuple(parameters_parents))
 
-        # Update the users table if applicable
+        # Update the users table
         if update_fields_users:
             cursor.execute("""
                 SELECT user_id FROM parents WHERE parent_id = %s
