@@ -1,4 +1,3 @@
-# Import necessary modules and functions from Flask and other libraries
 from flask import Blueprint, request, jsonify, current_app
 import MySQLdb.cursors
 import bcrypt
