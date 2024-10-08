@@ -136,12 +136,12 @@ def get_student_by_id():
         mysql = get_mysql()
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-        # Query to get the student's personal information
+        # Modified query to join the classes table and get the class name
         query = """
         SELECT 
             s.student_id,
             s.student_name,
-            s.class_id,
+            c.class_name,  -- Fetching class name instead of class ID
             u.date_of_birth,
             u.gender,
             u.full_name,
@@ -157,6 +157,8 @@ def get_student_by_id():
             students s
         JOIN 
             users u ON s.user_id = u.user_id
+        JOIN
+            classes c ON s.class_id = c.class_id  -- Join with classes table to get the class name
         WHERE 
             s.student_id = %s
         """
@@ -171,6 +173,7 @@ def get_student_by_id():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # Route to modify student data including, Name, Gender, DOB, etc.
 @student_routes.route('/update_student_profile', methods=['POST'])
