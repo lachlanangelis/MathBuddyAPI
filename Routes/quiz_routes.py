@@ -621,3 +621,57 @@ def get_quiz_details():
     except Exception as e:
         print(f"Error in get_quiz_details: {e}")
         return jsonify({"error": str(e)}), 500
+
+@quiz_routes.route('/update_quiz', methods=['POST'])
+def update_quiz():
+    try:
+        # Retrieve the JSON data from the request
+        data = request.get_json()
+
+        # Extract the required fields
+        quiz_id = data.get('quiz_id')
+        title = data.get('title')
+        description = data.get('description')
+        due_date = data.get('due_date')
+        time_limit = data.get('time_limit')
+        questions = data.get('questions')
+
+        # Validate that all required fields are present
+        if not quiz_id or not title or not description or not due_date or questions is None:
+            return jsonify({"error": "Missing required parameters"}), 400
+
+        # Connect to the database
+        mysql = get_mysql()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # Update the quizzes table with the new details
+        cursor.execute("""
+            UPDATE quizzes
+            SET title = %s, description = %s, due_date = %s, time_limit = %s
+            WHERE quiz_id = %s
+        """, (title, description, due_date, time_limit, quiz_id))
+
+        # Update each quiz question with new text and correct answers
+        for question in questions:
+            question_id = question.get('question_id')
+            question_text = question.get('question_text')
+            correct_answer = question.get('correct_answer')
+
+            if not question_id or not question_text or correct_answer is None:
+                return jsonify({"error": "Missing question details"}), 400
+
+            cursor.execute("""
+                UPDATE quiz_questions
+                SET question_text = %s, correct_answer = %s
+                WHERE question_id = %s AND quiz_id = %s
+            """, (question_text, correct_answer, question_id, quiz_id))
+
+        # Commit the changes to the database
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({"message": "Quiz updated successfully"}), 200
+
+    except Exception as e:
+        print(f"Error occurred while updating quiz: {e}")
+        return jsonify({"error": str(e)}), 500
