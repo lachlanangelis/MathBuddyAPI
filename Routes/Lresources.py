@@ -4,20 +4,33 @@ from youtubesearchpython import VideosSearch
 
 Lresources = Blueprint('Lresources', __name__)
 
+# Function to determine search query difficulty based on grade
+def determine_difficulty(grade):
+    if grade >= 90:
+        return 'Advanced'
+    elif grade >= 60:
+        return 'Intermediate'
+    else:
+        return 'Basics of'
+
 @Lresources.route('/search_videos', methods=['POST'])
 def search_videos():
     try:
         data = request.get_json()
-        weak_topics = data.get('weak_topics')
+        topic = data.get('topic')
+        grade = data.get('grade')  # Get the grade from the request
 
-        if not weak_topics:
-            return jsonify({"error": "No weak topics provided"}), 400
+        if not topic or grade is None:
+            return jsonify({"error": "No topic or grade provided"}), 400
 
-        # Build search query from weak topics
-        search_query = 'Basics of '.join(weak_topics)
+        # Determine difficulty level based on grade
+        difficulty = determine_difficulty(grade)
+
+        # Build search query from topic and difficulty level
+        search_query = difficulty + ' ' + topic
 
         # Initialize YouTube search
-        videos_search = VideosSearch(search_query, limit = 1)
+        videos_search = VideosSearch(search_query, limit=1)
         results = videos_search.result()
 
         if results['result']:
@@ -35,13 +48,17 @@ def search_videos():
 def search_articles():
     try:
         data = request.get_json()
-        weak_topics = data.get('weak_topics')
+        topic = data.get('topic')
+        grade = data.get('grade')  # Get the grade from the request
 
-        if not weak_topics:
-            return jsonify({"error": "No weak topics provided"}), 400
+        if not topic or grade is None:
+            return jsonify({"error": "No topic or grade provided"}), 400
 
-        # Build search query from weak topics
-        search_query = ' '.join(weak_topics) + ' learning resources'
+        # Determine difficulty level based on grade
+        difficulty = determine_difficulty(grade)
+
+        # Build search query from topic and difficulty level
+        search_query = difficulty + ' ' + topic + ' learning resources'
 
         # Perform Google search
         search_results = search(search_query, num_results=3)  # Limit to 3 results
@@ -54,13 +71,17 @@ def search_articles():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-def search_videosFunc(weak_topics):
+# Helper function for videos with difficulty consideration
+def search_videosFunc(topic, grade):
     try:
-        if not weak_topics:
-            return {"error": "No weak topics provided"}
+        if not topic or grade is None:
+            return {"error": "No topic or grade provided"}
 
-        # Build search query from weak topics
-        search_query = 'Basics of ' + weak_topics
+        # Determine difficulty level based on grade
+        difficulty = determine_difficulty(grade)
+
+        # Build search query from topic and difficulty level
+        search_query = difficulty + ' ' + topic
 
         # Initialize YouTube search
         videos_search = VideosSearch(search_query, limit=1)
@@ -77,14 +98,17 @@ def search_videosFunc(weak_topics):
     except Exception as e:
         return {"error": str(e)}
 
-
-def search_articlesFunc(weak_topics):
+# Helper function for articles with difficulty consideration
+def search_articlesFunc(topic, grade):
     try:
-        if not weak_topics:
-            return {"error": "No weak topics provided"}
+        if not topic or grade is None:
+            return {"error": "No topic or grade provided"}
 
-        # Build search query from weak topics
-        search_query = ' '.join(weak_topics) + ' learning resources'
+        # Determine difficulty level based on grade
+        difficulty = determine_difficulty(grade)
+
+        # Build search query from topic and difficulty level
+        search_query = difficulty + ' ' + topic + ' learning resources'
 
         # Perform Google search and convert to a list
         search_results = list(search(search_query, num_results=3))  # Convert generator to list

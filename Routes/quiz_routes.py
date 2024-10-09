@@ -447,12 +447,12 @@ def student_quiz_complete():
         feedback_data = cursor.fetchone()
         feedback = feedback_data['feedback_text_ai'] if feedback_data else None
 
-        # Search for a related video based on the extracted topic
-        video_result = search_videosFunc(topic)
+        # Search for a related video based on the extracted topic and score (as grade)
+        video_result = search_videosFunc(topic, student_score)
         video_url = video_result.get('video_url') if 'video_url' in video_result else None
 
-        # Search for related articles based on the extracted topic
-        article_result = search_articlesFunc([topic])  # Pass as list if necessary
+        # Search for related articles based on the extracted topic and score (as grade)
+        article_result = search_articlesFunc(topic, student_score)  # No need to pass as a list anymore
         articles = article_result.get('articles') if 'articles' in article_result else []
 
         cursor.close()
@@ -470,6 +470,7 @@ def student_quiz_complete():
     except Exception as e:
         print(f"Error occurred: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 @quiz_routes.route('/parent_quiz_complete', methods=['POST'])
 def parent_quiz_complete():
