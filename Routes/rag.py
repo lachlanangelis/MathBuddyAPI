@@ -41,7 +41,6 @@ def get_system_message_rag(content):
     Constraints:
     1. DO NOT PROVIDE ANY EXPLANATION OR DETAILS OR MENTION THAT YOU WERE GIVEN CONTEXT.
     2. Don't mention that you are not able to find the answer in the provided context.
-    3. DO NOT USE ANY NAMES GIVEN IN THE CONTENT IN YOUR RESPONSE.
     4. DO NOT RE USE ANY OF THE CONTEXT OF THE PREVIOUS QUESTIONS"
     5. DO NOT RE USE ANY OF THE PREVIOUS QUESTIONS"
     6. DO NOT ANSWER THE QUESTION"

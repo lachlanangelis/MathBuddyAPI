@@ -225,18 +225,20 @@ def submit_quiz():
         student_name = cursor.fetchone()['student_name']
         cursor.close()
 
-        # Return the grade to the student immediately
-        response = jsonify({"message": "Quiz submitted and graded successfully", "grade": grade})
+        # Generate feedback synchronously and store it in the database
+        feedback_response = generate_feedback(student_id, quiz_id, student_name, grade)
 
-        # Generate feedback asynchronously and store it in the database
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            executor.submit(generate_feedback, student_id, quiz_id, student_name, grade)
-
-        return response, 200
+        # Return the grade and feedback to the student
+        return jsonify({
+            "message": "Quiz submitted and graded successfully",
+            "grade": grade,
+            "feedback": feedback_response.get_json()
+        }), 200
 
     except Exception as e:
         print(f"Error occurred: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 
 
