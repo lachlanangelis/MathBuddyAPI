@@ -105,28 +105,23 @@ def search_articlesFunc(topic, grade):
         if not topic or grade is None:
             return {"error": "No topic or grade provided"}
 
-        # Determine difficulty level based on grade
-        difficulty = determine_difficulty(grade)
+        # Determine the type of search query based on the student's grade
+        if grade < 60:
+            # For low grades, search for basic tutorials
+            search_query = f"Basics of {topic} tutorial -buy -price -store -shopping"
+        else:
+            # For higher grades, search for challenging questions
+            search_query = f"Hard {topic} questions -buy -price -store -shopping"
 
-        # Build search query from topic and difficulty level
-        # Add terms like "tutorial", "guide", "lesson" to focus on educational resources
-        # Add negative terms like "-buy", "-price", "-store" to avoid shopping pages
-        search_query = (
-            f"{difficulty} {topic} tutorial guide lesson how to -buy -price -store -shopping"
-        )
+        # Perform Google search
+        search_results = list(search(search_query, num_results=3))
 
-        # Perform Google search and filter by known educational domains (.edu, .org, etc.)
-        search_results = list(
-            search(search_query, num_results=3)
-        )  # Convert generator to list
-
-        # Optionally, filter by domain if needed (you can extend this list as necessary)
+        # Optionally filter out irrelevant domains if necessary (extend this list if needed)
         educational_domains = ['.edu', '.org', '.gov']
 
         filtered_results = [
-            result
-            for result in search_results
-            if any(domain in result for domain in educational_domains) or 'tutorial' in result or 'lesson' in result or 'guide' in result
+            result for result in search_results
+            if any(domain in result for domain in educational_domains) or 'tutorial' in result or 'questions' in result
         ]
 
         if filtered_results:
