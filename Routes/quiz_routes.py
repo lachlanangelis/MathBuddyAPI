@@ -391,7 +391,6 @@ def quiz_completion_details():
         return jsonify({"error": str(e)}), 500
 
 
-# Student Quiz Complete Route
 @quiz_routes.route('/student_quiz_complete', methods=['POST'])
 def student_quiz_complete():
     try:
@@ -439,6 +438,19 @@ def student_quiz_complete():
         student_score = student_quiz['score']
         completed_at = student_quiz['completed_at']
 
+        # Get the student's grade level by joining the students and classes tables
+        cursor.execute("""
+            SELECT c.class_grade
+            FROM students s
+            JOIN classes c ON s.class_id = c.class_id
+            WHERE s.student_id = %s
+        """, (student_id,))
+        student_info = cursor.fetchone()
+        if not student_info:
+            return jsonify({"error": "Student information not found"}), 404
+
+        student_grade_level = student_info['class_grade']
+
         # Get the feedback from the database
         cursor.execute("""
             SELECT feedback_text_ai
@@ -448,12 +460,12 @@ def student_quiz_complete():
         feedback_data = cursor.fetchone()
         feedback = feedback_data['feedback_text_ai'] if feedback_data else None
 
-        # Search for a related video based on the extracted topic and score (as grade)
+        # Search for a related video based on the extracted topic, score (as grade), and grade level
         video_result = search_videosFunc(topic, student_score)
         video_url = video_result.get('video_url') if 'video_url' in video_result else None
 
-        # Search for related articles based on the extracted topic and score (as grade)
-        article_result = search_articlesFunc(topic, student_score)
+        # Search for related articles based on the extracted topic, score (as grade), and grade level
+        article_result = search_articlesFunc(topic, student_score, student_grade_level)
         articles = article_result.get('articles') if 'articles' in article_result else []
 
         cursor.close()

@@ -100,18 +100,18 @@ def search_videosFunc(topic, grade):
         return {"error": str(e)}
 
 # Helper function for articles with difficulty consideration
-def search_articlesFunc(topic, grade):
+def search_articlesFunc(topic, score, grade_level):
     try:
-        if not topic or grade is None:
-            return {"error": "No topic or grade provided"}
+        if not topic or score is None or grade_level is None:
+            return {"error": "No topic, score, or grade level provided"}
 
-        # Determine the type of search query based on the student's grade
-        if grade < 60:
-            # For low grades, search for basic tutorials
-            search_query = f"Basics of {topic} tutorial -buy -price -store -shopping"
+        # Determine the type of search query based on the student's score and grade level
+        if score < 60:
+            # For low scores, search for basic tutorials
+            search_query = f"{topic} tutorial for grade {grade_level} -buy -price -store -shopping"
         else:
-            # For higher grades, search for challenging questions
-            search_query = f"Hard {topic} questions -buy -price -store -shopping"
+            # For higher scores, search for practice questions
+            search_query = f"{topic} practice questions for grade {grade_level} -buy -price -store -shopping"
 
         # Perform Google search
         search_results = list(search(search_query, num_results=3))
