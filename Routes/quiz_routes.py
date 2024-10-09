@@ -91,9 +91,8 @@ def generate_quiz_questions(topic, number_of_questions, difficulty):
 # Function to generate feedback using an LLM through Ollama
 # Function to generate feedback using an LLM through Ollama and store it in the database
 def generate_feedback(student_id, quiz_id, student_name, grade):
-    from app import app  # Import your Flask app
 
-    with app.app_context():  # Push an application context
+    with current_app.app_context():  # Push an application context
         try:
             # Prepare the data for the feedback generation
             results = {
@@ -145,7 +144,6 @@ def generate_feedback(student_id, quiz_id, student_name, grade):
         except Exception as e:
             print(f"Error in generate_feedback: {e}")  # Debugging statement
             return jsonify({"error": str(e)})
-
 
 @quiz_routes.route('/submit_quiz', methods=['POST'])
 def submit_quiz():
