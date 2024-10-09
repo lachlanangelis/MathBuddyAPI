@@ -37,6 +37,7 @@ def get_system_message_rag(content):
     Generate your response by following the steps below:
     1. For each question/directive:
         1a. Select the most relevant information from the context.
+    2. Try to make a question that is exciting and word based.
 
     Constraints:
     1. DO NOT PROVIDE ANY EXPLANATION OR DETAILS OR MENTION THAT YOU WERE GIVEN CONTEXT.
