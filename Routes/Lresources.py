@@ -123,19 +123,9 @@ def search_articlesFunc(topic, score, grade_level):
         # Log the results for debugging
         print(f"Google search results: {search_results}")
 
-        # Optionally filter out irrelevant domains if necessary (extend this list if needed)
-        educational_domains = ['.edu', '.org', '.gov']
-
-        filtered_results = [
-            result for result in search_results
-            if any(domain in result for domain in educational_domains) or 'tutorial' in result or 'questions' in result
-        ]
-
-        # Log filtered results for debugging
-        print(f"Filtered search results: {filtered_results}")
-
-        if filtered_results:
-            return {"articles": filtered_results}
+        # No filtering by domain, return all results
+        if search_results:
+            return {"articles": search_results}
         else:
             return {"message": "No educational articles found"}
 
