@@ -464,9 +464,15 @@ def student_quiz_complete():
         video_result = search_videosFunc(topic, student_score)
         video_url = video_result.get('video_url') if 'video_url' in video_result else None
 
+        # Log video search results for debugging
+        print(f"Video URL: {video_url}")
+
         # Search for related articles based on the extracted topic, score (as grade), and grade level
         article_result = search_articlesFunc(topic, student_score, student_grade_level)
         articles = article_result.get('articles') if 'articles' in article_result else []
+
+        # Log article search results for debugging
+        print(f"Articles: {articles}")
 
         cursor.close()
 
@@ -483,6 +489,7 @@ def student_quiz_complete():
     except Exception as e:
         print(f"Error occurred: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 
 @quiz_routes.route('/parent_quiz_complete', methods=['POST'])

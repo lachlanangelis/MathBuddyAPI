@@ -100,6 +100,7 @@ def search_videosFunc(topic, grade):
         return {"error": str(e)}
 
 # Helper function for articles with difficulty consideration
+# Helper function for articles with difficulty consideration
 def search_articlesFunc(topic, score, grade_level):
     try:
         if not topic or score is None or grade_level is None:
@@ -113,8 +114,14 @@ def search_articlesFunc(topic, score, grade_level):
             # For higher scores, search for practice questions
             search_query = f"{topic} practice questions for grade {grade_level} -buy -price -store -shopping"
 
+        # Log the query for debugging
+        print(f"Searching Google with query: {search_query}")
+
         # Perform Google search
         search_results = list(search(search_query, num_results=3))
+
+        # Log the results for debugging
+        print(f"Google search results: {search_results}")
 
         # Optionally filter out irrelevant domains if necessary (extend this list if needed)
         educational_domains = ['.edu', '.org', '.gov']
@@ -124,10 +131,14 @@ def search_articlesFunc(topic, score, grade_level):
             if any(domain in result for domain in educational_domains) or 'tutorial' in result or 'questions' in result
         ]
 
+        # Log filtered results for debugging
+        print(f"Filtered search results: {filtered_results}")
+
         if filtered_results:
             return {"articles": filtered_results}
         else:
             return {"message": "No educational articles found"}
 
     except Exception as e:
+        print(f"Error in search_articlesFunc: {e}")
         return {"error": str(e)}
