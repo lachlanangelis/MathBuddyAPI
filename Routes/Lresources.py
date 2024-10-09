@@ -72,6 +72,7 @@ def search_articles():
         return jsonify({"error": str(e)}), 500
 
 # Helper function for videos with difficulty consideration
+# Updated function to search for YouTube videos based on topic and grade
 def search_videosFunc(topic, grade):
     try:
         if not topic or grade is None:
@@ -108,15 +109,30 @@ def search_articlesFunc(topic, grade):
         difficulty = determine_difficulty(grade)
 
         # Build search query from topic and difficulty level
-        search_query = difficulty + ' ' + topic + ' learning resources'
+        # Add terms like "tutorial", "guide", "lesson" to focus on educational resources
+        # Add negative terms like "-buy", "-price", "-store" to avoid shopping pages
+        search_query = (
+            f"{difficulty} {topic} tutorial guide lesson how to -buy -price -store -shopping"
+        )
 
-        # Perform Google search and convert to a list
-        search_results = list(search(search_query, num_results=3))  # Convert generator to list
+        # Perform Google search and filter by known educational domains (.edu, .org, etc.)
+        search_results = list(
+            search(search_query, num_results=3)
+        )  # Convert generator to list
 
-        if search_results:
-            return {"articles": search_results}
+        # Optionally, filter by domain if needed (you can extend this list as necessary)
+        educational_domains = ['.edu', '.org', '.gov']
+
+        filtered_results = [
+            result
+            for result in search_results
+            if any(domain in result for domain in educational_domains) or 'tutorial' in result or 'lesson' in result or 'guide' in result
+        ]
+
+        if filtered_results:
+            return {"articles": filtered_results}
         else:
-            return {"message": "No articles found"}
+            return {"message": "No educational articles found"}
 
     except Exception as e:
         return {"error": str(e)}
