@@ -88,8 +88,6 @@ def generate_quiz_questions(topic, number_of_questions, difficulty):
 
     return questions
 
-
-# Function to generate feedback using an LLM through Ollama
 # Function to generate feedback using an LLM through Ollama and store it in the database
 def generate_feedback(student_id, quiz_id, student_name, grade):
 

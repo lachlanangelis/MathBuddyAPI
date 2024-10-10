@@ -101,7 +101,6 @@ def search_videosFunc(topic, grade):
         return {"error": str(e)}
 
 # Helper function for articles with difficulty consideration
-# Helper function for articles with difficulty consideration
 def search_articlesFunc(topic, score, grade_level):
     try:
         if not topic or score is None or grade_level is None:

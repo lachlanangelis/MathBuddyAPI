@@ -5,12 +5,11 @@ from flask_testing import TestCase
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from app import create_app  # Now it should be able to find app.py correctly
+from app import create_app
 
 
 class AuthRoutesTest(TestCase):
     def create_app(self):
-        # Set up your testing configuration here
         app = create_app()
         app.config['TESTING'] = True
         return app
@@ -51,4 +50,3 @@ class AuthRoutesTest(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json["message"], "Student and Parent registered successfully")
 
-# To run the tests, you can use the command `pytest` in your terminal.

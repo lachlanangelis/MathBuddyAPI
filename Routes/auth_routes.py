@@ -68,7 +68,6 @@ def login():
         return jsonify({"error": "An error occurred during login. Please try again later."}), 500
     
 # Define the signup route
-# TODO separate teacher and student signup
 @auth_routes.route('/signupTeach', methods=['POST'])
 def signup():
     try:

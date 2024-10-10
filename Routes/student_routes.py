@@ -404,9 +404,6 @@ def get_student_completed_quizzes():
         cursor.close()
         return jsonify(completed_quizzes)
 
-# Route to save a quiz, this includes marking the quiz, sending the prompt for AI feedback, and storing the result.
-# @student_routes.route('/submit_quiz', methods=['POST'])
-# still need ai functions to mark and give feedback!
 
 # Route to display active homework with quiz title and due date
 

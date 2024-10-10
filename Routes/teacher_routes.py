@@ -167,7 +167,6 @@ def get_teacher_lessons():
         data = request.get_json()
         token = data['token']
         teacher_id = get_id(token)
-        # teacher_id = request.args.get('teacher_id')
         if not teacher_id:
             return jsonify({"error": "Missing teacher_id parameter"}), 400
 
@@ -255,7 +254,6 @@ def update_teacher_profile():
         data = request.get_json()
         token = data['token']
         teacher_id = get_id(token)
-        # teacher_id = data.get('teacher_id')
 
         # Optional fields that can be updated
         teacher_name = data.get('teacher_name')

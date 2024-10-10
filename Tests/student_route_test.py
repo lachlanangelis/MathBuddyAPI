@@ -5,7 +5,6 @@ from flask_testing import TestCase
 import sys
 import os
 
-# Adjust the import path to your application
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from app import create_app
 
@@ -109,7 +108,6 @@ class StudentRoutesTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(response.json, list)
 
-    # Add more tests for error cases, e.g., missing fields, invalid tokens, etc.
 
 if __name__ == '__main__':
     unittest.main()

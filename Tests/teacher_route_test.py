@@ -5,7 +5,6 @@ from flask_testing import TestCase
 import sys
 import os
 
-# Adjust the import path to your application
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from app import create_app
 
