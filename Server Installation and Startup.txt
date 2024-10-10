@@ -1,0 +1,91 @@
+sudo apt-get update
+
+***Download Ollama***
+sudo curl -fsSL https://ollama.com/install.sh | sh
+
+ollama pull llama3
+
+ollama serve
+
+clear
+
+***Download and Sort out Python***
+
+***Download Python venv***
+
+sudo apt-get install python3-venv
+
+***Download Git and Get repository***
+
+sudo apt-get install git-all
+
+git clonehttps://github.com/lachlanangelis/MathBuddyAPI
+
+***Download Docker***
+
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+docker pull chromadb/chroma
+
+***Download C++ and Mysqldb***
+
+sudo apt-get install build-essential
+
+
+sudo apt install python3-dev default-libmysqlclient-dev build-essential
+
+
+***Pip install all requirements***
+
+pip install -r requirements.txt
+
+***Load ChromaDB***
+docker run -e ALLOW_RESET=TRUE -p 8000:8000 chromadb/chroma
+
+python3 chromadbload.py
+
+***Test App.py***
+
+***Install server and get it running***
+pip install gunicorn
+
+sudo apt install nginx
+
+sudo systemctl stop apache2
+
+sudo systemctl start nginx
+sudo systemctl enable nginx
+
+***Edit the default***
+server {
+    listen 80;
+
+    server_name your_domain_or_IP;
+
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+
+gunicorn --bind 0.0.0.0:5000 app:app
+
+
+***How to start the server***
+
+First connect to the machine through SSH on Google Cloud Console. Then do the following
+
+1. cd MathbuddyAPI
+2. git pull
+3. cd ..
+4. sudo systemctl stop apache2
+5. sudo systemctl restart nginx
+
+***Use screen to have 2 tabs in SSH***
+
+6. sudo docker run -e ALLOW_RESET=TRUE -p 8000:8000 chromadb/chroma - This is a process
+7. gunicorn --bind 0.0.0.0:5000 app:app - This is a process
