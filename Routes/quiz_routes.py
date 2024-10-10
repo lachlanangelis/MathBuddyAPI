@@ -1,3 +1,4 @@
+#Authors Lachlan
 import concurrent.futures
 import MySQLdb.cursors
 from Routes.ollama_routes import *

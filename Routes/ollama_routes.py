@@ -1,3 +1,4 @@
+#Authors Lachlan
 from flask import Blueprint, jsonify, request
 import ollama
 from Routes.rag import *

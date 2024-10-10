@@ -1,3 +1,4 @@
+#Authors Lachlan,Zuhayer, Raul
 import MySQLdb.cursors
 from flask import Blueprint, jsonify, current_app, request
 from flask_jwt_extended import jwt_required, decode_token

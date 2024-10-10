@@ -1,3 +1,4 @@
+#Authors Lachlan,Zuhayer
 from flask import Blueprint, request, jsonify, current_app
 import MySQLdb.cursors
 import bcrypt

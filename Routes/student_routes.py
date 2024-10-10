@@ -1,3 +1,4 @@
+#Authors Lachlan,Zuhayer
 import MySQLdb.cursors
 from decorator import *
 

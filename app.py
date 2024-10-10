@@ -1,3 +1,4 @@
+#Authors Lachlan,Zuhayer, Raul
 from flask_jwt_extended import JWTManager
 from flask import Flask
 from flask_mysqldb import MySQL

@@ -1,3 +1,4 @@
+#Authors Lachlan
 import json
 from sentence_transformers import SentenceTransformer
 import chromadb
